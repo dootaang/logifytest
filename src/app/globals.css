@@ -20,6 +20,8 @@
   --radius: 8px;
   --radius-lg: 12px;
   --transition: all 0.2s ease;
+  --background-hover: rgba(255, 255, 255, 0.1);
+  --accent-color-alpha: rgba(52, 152, 219, 0.2);
 }
 
 /* 라이트 테마 */
@@ -43,7 +45,10 @@
   --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-
+[data-theme="dark"] {
+  --background-hover: rgba(255, 255, 255, 0.05);
+  --accent-color-alpha: rgba(52, 152, 219, 0.3);
+}
 
 * {
   margin: 0;
@@ -109,7 +114,117 @@ body {
   font-size: 1rem;
 }
 
-/* 로그제조기 선택기 */.generator-selector {  display: flex;  justify-content: center;  margin-bottom: 25px;}.generator-grid {  display: grid;  grid-template-columns: repeat(5, 1fr);  gap: 12px;  max-width: 800px;  width: 100%;}.generator-option {  background: var(--bg-secondary);  border: 2px solid var(--border-color);  border-radius: var(--radius-lg);  padding: 16px 12px;  cursor: pointer;  transition: var(--transition);  text-align: center;  min-height: 110px;  display: flex;  flex-direction: column;  align-items: center;  justify-content: center;  gap: 6px;  position: relative;  overflow: hidden;}.generator-option:hover {  border-color: var(--accent-color);  transform: translateY(-2px);  box-shadow: var(--shadow-lg);}.generator-option.active {  border-color: var(--accent-color);  background: rgba(0, 212, 170, 0.1);  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);}.generator-icon {  font-size: 1.8rem;  margin-bottom: 4px;  filter: grayscale(0.3);  transition: var(--transition);}.generator-option:hover .generator-icon,.generator-option.active .generator-icon {  filter: grayscale(0);  transform: scale(1.1);}.generator-name {  font-size: 0.875rem;  font-weight: 600;  color: var(--text-primary);  margin-bottom: 2px;}.generator-option.active .generator-name {  color: var(--accent-color);}.generator-desc {  font-size: 0.7rem;  color: var(--text-muted);  line-height: 1.2;  opacity: 0.8;}.generator-option:hover .generator-desc,.generator-option.active .generator-desc {  opacity: 1;}/* 반응형 로그제조기 선택기 */@media (max-width: 768px) {  .generator-grid {    grid-template-columns: repeat(3, 1fr);    gap: 8px;  }    .generator-option {    padding: 12px 8px;    min-height: 90px;  }    .generator-icon {    font-size: 1.5rem;  }    .generator-name {    font-size: 0.8rem;  }    .generator-desc {    font-size: 0.65rem;  }}@media (max-width: 480px) {  .generator-grid {    grid-template-columns: repeat(2, 1fr);  }}
+/* 로그제조기 선택기 */
+.generator-selector {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+}
+
+.generator-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.generator-option {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.generator-option:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.generator-option.active {
+  border-color: var(--accent-color);
+  background: rgba(0, 212, 170, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+}
+
+.generator-icon {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+  filter: grayscale(0.3);
+  transition: var(--transition);
+}
+
+.generator-option:hover .generator-icon,
+.generator-option.active .generator-icon {
+  filter: grayscale(0);
+  transform: scale(1.1);
+}
+
+.generator-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.generator-option.active .generator-name {
+  color: var(--accent-color);
+}
+
+.generator-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+  opacity: 0.8;
+}
+
+.generator-option:hover .generator-desc,
+.generator-option.active .generator-desc {
+  opacity: 1;
+}
+
+/* 반응형 로그제조기 선택기 */
+@media (max-width: 768px) {
+  .generator-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .generator-option {
+    padding: 12px 8px;
+    min-height: 90px;
+  }
+  
+  .generator-icon {
+    font-size: 1.5rem;
+  }
+  
+  .generator-name {
+    font-size: 0.8rem;
+  }
+  
+  .generator-desc {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .generator-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 /* 메인 레이아웃 */
 .main-layout {
@@ -439,7 +554,33 @@ body {
     padding: 16px;
   }
   
-  .generator-grid {    grid-template-columns: repeat(3, 1fr);    gap: 8px;  }    .generator-option {    padding: 12px 8px;    min-height: 90px;  }    .generator-icon {    font-size: 1.5rem;  }    .generator-name {    font-size: 0.8rem;  }    .generator-desc {    font-size: 0.65rem;  }}@media (max-width: 480px) {  .generator-grid {    grid-template-columns: repeat(2, 1fr);  }
+  .generator-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  
+  .generator-option {
+    padding: 12px 8px;
+    min-height: 90px;
+  }
+  
+  .generator-icon {
+    font-size: 1.5rem;
+  }
+  
+  .generator-name {
+    font-size: 0.8rem;
+  }
+  
+  .generator-desc {
+    font-size: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .generator-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* 로딩 애니메이션 */
@@ -1129,4 +1270,35 @@ body {
   .chatchan-settings .additional-options-box > .input-group {
     align-items: flex-start;
   }
+}
+
+/* 파일 업로드 스타일 */
+.form-input[type="file"] {
+  padding: 12px;
+  border: 2px dashed var(--border-color);
+  background: var(--background-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-input[type="file"]:hover {
+  border-color: var(--accent-color);
+  background: var(--background-hover);
+}
+
+.form-input[type="file"]:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-color-alpha);
+}
+
+/* 구분선 텍스트 */
+.divider-text {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 20px 0;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
 } 

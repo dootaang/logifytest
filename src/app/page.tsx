@@ -6,6 +6,14 @@ import BookmarkletGenerator from '@/generators/BookmarkletGenerator'
 import BannerGenerator from '@/generators/BannerGenerator'
 import ChatchanGenerator from '@/generators/ChatchanGenerator'
 import BingdunGenerator from '@/generators/BingdunGenerator'
+import { useChatchanGeneratorV2 } from '@/generators/ChatchanGeneratorV2'
+import ChatchanFormLayout from '@/components/ChatchanFormLayout'
+import BingdunFormLayout from '@/components/BingdunFormLayout'
+
+interface WordReplacement {
+  from: string;
+  to: string;
+}
 
 export default function Home() {
   // 다크모드 감지 함수
@@ -53,6 +61,94 @@ export default function Home() {
 그녀는 책상 표면에 통합된 세련된 태블릿을 가리켰다. "성함과 연령, 성별을 말씀해 주시겠습니까? 또한, 대략적인 각성 날짜와 시간을 기억하신다면 도움이 될 것입니다. 마지막으로, 현재 보유하고 계신 것으로 파악된 스킬이 있다면 모두 말씀해 주십시오."
 
 최유진은 정보를 입력할 준비를 하며 태블릿 위를 펜으로 가볍게 두드렸다. 그녀는 전문가적인 태도를 잃지 않고 참을성 있게 기다리며, 당신이 생각을 정리하고 헌터로서의 새로운 삶의 첫 공식 단계에 응답할 시간을 주었다.`
+  }
+
+  // 챗챈형 기본 설정
+  const defaultChatchanConfig = {
+    characterName: '',
+    modelName: '',
+    promptName: '',
+    assistModelName: '',
+    userName: 'USER',
+    chatNumber: '',
+    characterImageUrl: '',
+    useCharacterImage: true,
+    backgroundColor: '#ffffff',
+    textColor: '#1d2129',
+    highlightColor: '#3498db',
+    promptColor: '#6c757d',
+    emphasisColor: '#1f618d',
+    baseFontSize: 15,
+    titleFontSize: 38,
+    containerWidth: 650,
+    logSectionRadius: 12,
+    lineHeight: 1.6,
+    letterSpacing: -0.05,
+    italicizeNarration: true,
+    simpleOutputMode: false,
+    disableChatLogCollapse: false,
+    isAutoInputMode: false,
+    dialogueUseBubble: true,
+    narrationUseLine: true,
+    showBriefHeaderInfo: false,
+    content: `- 화창한 봄날, 공원에서 우연히 만난 두 사람은 *짧게* 대화를 나누기 시작했다.
+USER: 안녕하세요? 오늘 ^날씨^가 어때요?
+- AI는 잠시 생각에 잠기더니 환하게 웃으며 대답했다.
+AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $23도$로 예상됩니다. ***야외 활동하기 좋은 날씨네요!***`,
+    selectedTheme: 'light',
+    wordReplacements: [
+      { from: '', to: '' },
+      { from: '', to: '' },
+      { from: '', to: '' }
+    ]
+  }
+
+  // 빙둔형 기본 설정
+  const defaultBingdunConfig = {
+    backgroundImage: '//ac-p1.namu.la/20250516sac/91f3aabe28fcff8e67a1aa336cf1b60e4ee8cf01452bbb2514d56a74a3ba83bb.png?expires=1747386568&key=8Io45t13Glg5SKKqNz9B0A',
+    profileImage: '//ac.namu.la/20250516sac/88097ac0a07765055681e2aade1a5478e7b75002857cf6ccee5438fae6ea24c9.png?expires=1747386568&key=e3mzkfbEBkrXWZoX1jVAdQ',
+    leftText: '얼터네이트 헌터즈',
+    leftTextColor1: '#ffffff',
+    leftTextColor2: '#89D9D8',
+    quoteColor1: '#2A4569',
+    quoteColor2: '#497AA6',
+    quoteColorEnabled: true,
+    quoteGradientEnabled: true,
+    boldEnabled: false,
+    singleQuoteItalic: false,
+    singleQuoteColor: '#666666',
+    contentBackgroundColor: 'rgba(250, 250, 250, 1)',
+    contentTextColor: '#333',
+    fontSize: 14,
+    lineHeight: 1.75,
+    paragraphIndent: false,
+    selectedTheme: 'light',
+    selectedGenerator: 'bingdun',
+    wordReplacements: [
+      { from: '', to: '' },
+      { from: '', to: '' },
+      { from: '', to: '' }
+    ],
+    content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다.
+
+"헌터 협회에 오신 것을 환영합니다." 최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다.
+
+그녀는 약간의 연습된 미소를 지어 보였다.
+
+'이제 새로운 시작이군.' 당신은 마음속으로 생각했다.`,
+    tag1Text: '프롬프트',
+    tag2Text: '번역',
+    tag3Text: '사용 모델',
+    tagBackgroundColor: '#f0f0f0',
+    tagTextColor: '#666666',
+    tagBorderRadius: 20,
+    characterDescription: '캐릭터 소개문',
+    showCharacterDescription: false,
+    designTheme: 'black' as const,
+    tagCount: 3,
+    tagBorderColor: '#ffffff',
+    tagStyle: 'outline' as const,
+    hideProfileSection: false
   }
 
   // 기본 이미지 옵션
@@ -110,6 +206,48 @@ export default function Home() {
     }
   }
 
+  // 챗챈형 설정 불러오기
+  const loadChatchanConfig = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('chatchanConfig')
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig)
+          return {
+            ...defaultChatchanConfig,
+            ...parsedConfig,
+            selectedTheme: getSystemTheme()
+          }
+        }
+      }
+      return { ...defaultChatchanConfig, selectedTheme: getSystemTheme() }
+    } catch (error) {
+      console.error('챗챈 설정을 불러오는 중 오류 발생:', error)
+      return { ...defaultChatchanConfig, selectedTheme: getSystemTheme() }
+    }
+  }
+
+  // 빙둔형 설정 불러오기
+  const loadBingdunConfig = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('bingdunConfig')
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig)
+          return {
+            ...defaultBingdunConfig,
+            ...parsedConfig,
+            selectedTheme: getSystemTheme()
+          }
+        }
+      }
+      return { ...defaultBingdunConfig, selectedTheme: getSystemTheme() }
+    } catch (error) {
+      console.error('빙둔 설정을 불러오는 중 오류 발생:', error)
+      return { ...defaultBingdunConfig, selectedTheme: getSystemTheme() }
+    }
+  }
+
   // localStorage에 설정 저장하기
   const saveConfig = (newConfig: any) => {
     try {
@@ -121,13 +259,52 @@ export default function Home() {
     }
   }
 
+  // 챗챈형 설정 저장하기
+  const saveChatchanConfig = (newConfig: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('chatchanConfig', JSON.stringify(newConfig))
+      }
+    } catch (error) {
+      console.error('챗챈 설정을 저장하는 중 오류 발생:', error)
+    }
+  }
+
+  // 빙둔형 설정 저장하기
+  const saveBingdunConfig = (newConfig: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bingdunConfig', JSON.stringify(newConfig))
+      }
+    } catch (error) {
+      console.error('빙둔 설정을 저장하는 중 오류 발생:', error)
+    }
+  }
+
   const [config, setConfig] = useState(defaultConfig)
+  const [chatchanConfig, setChatchanConfig] = useState(defaultChatchanConfig)
+  const [bingdunConfig, setBingdunConfig] = useState(defaultBingdunConfig)
   const [extractedFromHtml, setExtractedFromHtml] = useState(false)
+  const [chatchanGeneratedHTML, setChatchanGeneratedHTML] = useState('')
+
+  // 챗챈 생성기 훅
+  const { generateHTML: generateChatchanHTML } = useChatchanGeneratorV2(chatchanConfig)
 
   // 컴포넌트 마운트 후 설정 로드
   useEffect(() => {
     setConfig(loadConfig())
+    setChatchanConfig(loadChatchanConfig())
+    setBingdunConfig(loadBingdunConfig())
   }, [])
+
+  // 빙둔형 초기 HTML 생성
+  useEffect(() => {
+    if (bingdunConfig.content) {
+      const generator = BingdunGenerator({ config: bingdunConfig })
+      const html = generator.generateHTML()
+      setBingdunGeneratedHTML(html)
+    }
+  }, [bingdunConfig.content !== defaultBingdunConfig.content]) // 초기 로드 완료 후에만 실행
 
   // 테마 적용
   useEffect(() => {
@@ -160,6 +337,33 @@ export default function Home() {
     saveConfig(config)
   }, [config])
 
+  // 챗챈 설정이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    saveChatchanConfig(chatchanConfig)
+  }, [chatchanConfig])
+
+  // 빙둔형 설정이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    saveBingdunConfig(bingdunConfig)
+  }, [bingdunConfig])
+
+  // 챗챈형 설정이 변경될 때마다 자동 HTML 생성
+  useEffect(() => {
+    if (config.selectedGenerator === 'chatchan') {
+      const html = generateChatchanHTML()
+      setChatchanGeneratedHTML(html)
+    }
+  }, [chatchanConfig, config.selectedGenerator, generateChatchanHTML])
+
+  // 빙둔형 설정이 변경될 때마다 자동 HTML 생성
+  useEffect(() => {
+    if (config.selectedGenerator === 'bingdun') {
+      const generator = BingdunGenerator({ config: bingdunConfig })
+      const html = generator.generateHTML()
+      setBingdunGeneratedHTML(html)
+    }
+  }, [bingdunConfig, config.selectedGenerator])
+
   // 이미지 HTML에서 URL 추출하는 함수
   const extractImageUrlFromHtml = (htmlString: string) => {
     const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/i
@@ -180,10 +384,24 @@ export default function Home() {
   // URL에 프로토콜이 없으면 https를 추가하는 함수
   const normalizeImageUrl = (url: string) => {
     if (!url) return ''
+    // 데이터 URL (base64)은 그대로 사용
+    if (url.startsWith('data:')) {
+      return url
+    }
+    // 절대 URL (//로 시작)은 https 프로토콜 추가
     if (url.startsWith('//')) {
       return 'https:' + url
     }
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
+    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
+    if (url.startsWith('/uploads/')) {
+      // 개발환경에서는 localhost 사용
+      if (typeof window !== 'undefined') {
+        return window.location.protocol + '//' + window.location.host + url
+      }
+      return 'http://localhost:3000' + url
+    }
+    // http/https가 없으면 https 추가
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return 'https://' + url
     }
     return url
@@ -192,6 +410,13 @@ export default function Home() {
   // 이미지 프록시 URL 생성 함수
   const getProxyImageUrl = (url: string) => {
     const normalizedUrl = normalizeImageUrl(url)
+    
+    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
+    if (normalizedUrl.includes('/uploads/')) {
+      return normalizedUrl
+    }
+    
+    // 외부 이미지는 프록시를 통해 로드 (CORS 우회)
     return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`
   }
 
@@ -269,6 +494,82 @@ export default function Home() {
     }))
   }
 
+  // 이미지 파일 업로드 처리
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 파일 크기 제한 (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('이미지 파일 크기는 5MB 이하여야 합니다.');
+        return;
+      }
+
+      // 이미지 파일 타입 확인
+      if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+      }
+
+      // 업로드 진행 상태 표시
+      const originalFileName = file.name;
+      console.log('이미지 업로드 시작:', originalFileName);
+
+      try {
+        // 업로드 중 상태 표시
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+        console.log('업로드 응답:', result);
+
+        if (result.success && result.url) {
+          handleInputChange('backgroundImage', result.url);
+          setExtractedFromHtml(false);
+          alert('✅ 이미지가 성공적으로 업로드되었습니다!\n\n아카라이브 형식 URL이 생성되었습니다.');
+        } else {
+          // 업로드 실패 시 상세한 안내 제공
+          console.warn('업로드 실패:', result);
+          
+          let message = '⚠️ 아카라이브 이미지 업로드에 실패했습니다.\n\n';
+          message += '📌 권장 해결방법 (가장 확실한 방법):\n\n';
+          message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
+          message += '2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드\n';
+          message += '3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사\n';
+          message += '4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
+          message += '5️⃣ URL이 자동으로 추출되어 적용됩니다\n\n';
+          
+          if (!process.env.NEXT_PUBLIC_PROXY_URL) {
+            message += '🔧 개발자용 정보:\n';
+            message += '프록시 서버 설정 시 자동 업로드가 가능할 수 있습니다.\n';
+            message += '.env.local 파일에 NEXT_PUBLIC_PROXY_URL을 설정하세요.\n\n';
+          }
+          
+          message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
+          
+          alert(message);
+        }
+      } catch (error) {
+        console.error('업로드 네트워크 오류:', error);
+        
+        let message = '❌ 네트워크 오류가 발생했습니다.\n\n';
+        message += '📌 권장 해결방법:\n\n';
+        message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
+        message += '2️⃣ 이미지를 업로드하여 에디터에 삽입\n';
+        message += '3️⃣ 생성된 이미지 HTML 코드를 복사\n';
+        message += '4️⃣ 여기서 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
+        message += '5️⃣ URL이 자동으로 추출됩니다\n\n';
+        message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
+        
+        alert(message);
+      }
+    }
+  };
+
   // 기본 이미지 선택 핸들러
   const handleDefaultImageSelect = (imageUrl: string) => {
     handleInputChange('backgroundImage', imageUrl)
@@ -292,7 +593,7 @@ export default function Home() {
         generator = ChatchanGenerator({ config })
         break
       case 'bingdun':
-        generator = BingdunGenerator({ config })
+        generator = BingdunGenerator({ config: bingdunConfig })
         break
       default:
         generator = JellyGenerator({ config })
@@ -300,6 +601,32 @@ export default function Home() {
     }
     
     return generator.generateHTML()
+  }
+
+  // 미리보기용 HTML 생성 (프록시 사용)
+  const generatePreviewHTML = () => {
+    let generator
+    
+    switch (config.selectedGenerator) {
+      case 'bookmarklet':
+        generator = BookmarkletGenerator({ config })
+        return generator.generateHTML() // 북마클릿형은 이미지 없음
+      case 'banner':
+        generator = BannerGenerator({ config })
+        return generator.generateHTML() // 배너형은 이미지 없음
+      case 'jelly':
+        generator = JellyGenerator({ config })
+        return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML()
+      case 'chatchan':
+        generator = ChatchanGenerator({ config })
+        return generator.generateHTML() // 챗챈형은 이미지 없음
+      case 'bingdun':
+        // 빙둔형은 별도 컴포넌트에서 처리
+        return ''
+      default:
+        generator = JellyGenerator({ config })
+        return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML()
+    }
   }
 
   const hexToRgb = (hex: string) => {
@@ -324,13 +651,72 @@ export default function Home() {
     }))
   }
 
+  // 챗챈형 핸들러 함수들 추가
+  const handleChatchanConfigChange = (newConfig: Partial<typeof defaultChatchanConfig>) => {
+    setChatchanConfig(prev => ({
+      ...prev,
+      ...newConfig
+    }))
+  }
+
+  const handleChatchanGenerateHTML = () => {
+    const html = generateChatchanHTML()
+    setChatchanGeneratedHTML(html)
+  }
+
+  const handleChatchanCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(chatchanGeneratedHTML).then(() => {
+        alert('챗챈형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
+    }
+  }
+
+  const handleChatchanReset = () => {
+    if (typeof window !== 'undefined' && confirm('챗챈형 설정을 기본값으로 초기화하시겠습니까?')) {
+      setChatchanConfig({ ...defaultChatchanConfig, selectedTheme: getSystemTheme() })
+      setChatchanGeneratedHTML('')
+    }
+  }
+
+  // 빙둔형 핸들러 함수들
+  const [bingdunGeneratedHTML, setBingdunGeneratedHTML] = useState('')
+
+  const handleBingdunConfigChange = (newConfig: any) => {
+    setBingdunConfig(prev => ({
+      ...prev,
+      ...newConfig
+    }))
+  }
+
+  const handleBingdunGenerateHTML = () => {
+    const generator = BingdunGenerator({ config: bingdunConfig })
+    const html = generator.generateHTML()
+    setBingdunGeneratedHTML(html)
+  }
+
+  const handleBingdunCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(bingdunGeneratedHTML).then(() => {
+        alert('빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
+    }
+  }
+
+  const handleBingdunReset = () => {
+    if (typeof window !== 'undefined' && confirm('빙둔형 설정을 기본값으로 초기화하시겠습니까?')) {
+      setBingdunConfig({ ...defaultBingdunConfig, selectedTheme: getSystemTheme() })
+      setBingdunGeneratedHTML('')
+    }
+  }
+
   return (
     <div className="container">
+      {/* 로그제조기 타입 선택기 - 모든 상황에서 표시 */}
       <div className="header">
         <h1>로그제조기 올인원</h1>
         <p>모든 설정을 한 곳에서 관리하는 스마트 웹로그 생성기</p>
         
-        {/* 로그제조기 타입 선택기 */}
         <div className="generator-selector">
           <div className="generator-grid">
             <button
@@ -380,325 +766,368 @@ export default function Home() {
           </div>
         </div>
       </div>
-      
-      <div className="main-layout">
-        <div className="settings-panel">
-          {/* 본문 내용을 최상단으로 이동 */}
-          <div className="settings-section">
-            <h3 className="section-title">📄 본문 내용</h3>
-            <div className="form-group">
-              <textarea
-                className="form-input form-textarea"
-                value={config.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
-                placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
-                rows={12}
-              />
-            </div>
-            
-            {/* 액션 버튼도 함께 최상단에 배치 */}
-            <div className="button-group">
-              <button className="button" onClick={copyToClipboard}>
-                📋 HTML 복사
-              </button>
-              <button className="button danger" onClick={resetToDefault}>
-                🔄 초기화
-              </button>
-            </div>
-          </div>
 
-          {/* 이미지 설정 */}
-          <div className="settings-section">
-            <h3 className="section-title">🖼️ 이미지 설정</h3>
-            <div className="form-group">
-              <label className="form-label">배경 이미지</label>
-              <input
-                className="form-input"
-                type="text"
-                value={config.backgroundImage}
-                onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
-                onPaste={handlePaste}
-                placeholder="이미지 URL 또는 HTML을 입력하세요"
-              />
-              <div className="hint">
-                💡 최적 권장 사이즈: 1400px × 400px (3.5:1 비율)
+      {/* 선택된 제너레이터에 따라 전용 레이아웃 렌더링 */}
+      {config.selectedGenerator === 'chatchan' ? (
+        <ChatchanFormLayout
+          config={chatchanConfig}
+          onConfigChange={handleChatchanConfigChange}
+          generatedHTML={chatchanGeneratedHTML}
+          onGenerateHTML={handleChatchanGenerateHTML}
+          onCopyHTML={handleChatchanCopyHTML}
+          onReset={handleChatchanReset}
+        />
+      ) : config.selectedGenerator === 'bingdun' ? (
+        <BingdunFormLayout
+          config={bingdunConfig}
+          onConfigChange={handleBingdunConfigChange}
+          generatedHTML={bingdunGeneratedHTML}
+          onGenerateHTML={handleBingdunGenerateHTML}
+          onCopyHTML={handleBingdunCopyHTML}
+          onReset={handleBingdunReset}
+        />
+      ) : (
+        <div className="main-layout">
+          <div className="settings-panel">
+            {/* 본문 내용을 최상단으로 이동 */}
+            <div className="settings-section">
+              <h3 className="section-title">📄 본문 내용</h3>
+              <div className="form-group">
+                <textarea
+                  className="form-input form-textarea"
+                  value={config.content}
+                  onChange={(e) => handleInputChange('content', e.target.value)}
+                  placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
+                  rows={12}
+                />
               </div>
-              {extractedFromHtml && (
-                <div className="hint success">
-                  ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
+              
+              {/* 액션 버튼도 함께 최상단에 배치 */}
+              <div className="button-group">
+                <button className="button" onClick={copyToClipboard}>
+                  📋 HTML 복사
+                </button>
+                <button className="button danger" onClick={resetToDefault}>
+                  🔄 초기화
+                </button>
+              </div>
+            </div>
+
+            {/* 이미지 설정 */}
+            <div className="settings-section">
+              <h3 className="section-title">🖼️ 이미지 설정</h3>
+              
+              {/* 이미지 업로드 */}
+              <div className="form-group">
+                <label className="form-label">📁 이미지 파일 업로드 (실험적 기능)</label>
+                <input
+                  className="form-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <div className="hint">
+                  ⚠️ 아카라이브 호환성 문제로 실패할 수 있습니다. 권장: 아카라이브에서 직접 업로드
                 </div>
-              )}
+              </div>
+
+              <div className="form-group">
+                <div className="divider-text">권장 방법</div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">🔗 아카라이브 이미지 URL (권장)</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  value={config.backgroundImage.startsWith('data:') ? '' : config.backgroundImage}
+                  onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
+                  onPaste={handlePaste}
+                  placeholder="아카라이브 이미지 HTML 또는 URL을 입력하세요"
+                />
+                <div className="hint">
+                  💡 <strong>권장 방법:</strong> <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 글쓰기</a>에서 이미지 업로드 → HTML 코드 복사 → 여기에 붙여넣기
+                </div>
+                <div className="hint">
+                  📋 아카라이브 이미지 HTML 형식: &lt;img src="//ac-p1.namu.la/..." /&gt;
+                </div>
+                {extractedFromHtml && (
+                  <div className="hint success">
+                    ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
+                  </div>
+                )}
+              </div>
+              
+              {/* 기본 이미지 선택 */}
+              <div className="form-group">
+                <label className="form-label">🖼️ 기본 이미지</label>
+                <div className="default-images-grid">
+                  {defaultImages.map((image) => (
+                    <button
+                      key={image.id}
+                      type="button"
+                      className={`default-image-button ${config.backgroundImage === image.url ? 'active' : ''}`}
+                      onClick={() => handleDefaultImageSelect(image.url)}
+                      title={`${image.name} 배경 이미지 적용`}
+                    >
+                      <img 
+                        src={getPreviewImageUrl(image.url)} 
+                        alt={image.name}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none'
+                        }}
+                      />
+                      <span className="image-name">{image.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="hint">
+                  💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
+                </div>
+              </div>
+            </div>
+
+            {/* 텍스트 설정 */}
+            <div className="settings-section">
+              <h3 className="section-title">📝 텍스트 설정</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">왼쪽 텍스트</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={config.leftText}
+                    onChange={(e) => handleInputChange('leftText', e.target.value)}
+                    placeholder="왼쪽 텍스트"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">오른쪽 텍스트</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={config.rightText}
+                    onChange={(e) => handleInputChange('rightText', e.target.value)}
+                    placeholder="오른쪽 텍스트"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 본문 색상 설정 추가 */}
+            <div className="settings-section">
+              <h3 className="section-title">🎨 본문 색상 설정</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">본문 배경색</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
+                    onChange={(e) => handleInputChange('contentBackgroundColor', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">본문 글자색</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.contentTextColor}
+                    onChange={(e) => handleInputChange('contentTextColor', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 색상 설정 */}
+            <div className="settings-section">
+              <h3 className="section-title">🎨 색상 설정</h3>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">왼쪽 박스 색상 1</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.leftTextColor1}
+                    onChange={(e) => handleInputChange('leftTextColor1', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">왼쪽 박스 색상 2</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.leftTextColor2}
+                    onChange={(e) => handleInputChange('leftTextColor2', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">큰따옴표 색상 1</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.quoteColor1}
+                    onChange={(e) => handleInputChange('quoteColor1', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">큰따옴표 색상 2</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.quoteColor2}
+                    onChange={(e) => handleInputChange('quoteColor2', e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">작은따옴표 색상</label>
+                  <input
+                    className="color-input"
+                    type="color"
+                    value={config.singleQuoteColor}
+                    onChange={(e) => handleInputChange('singleQuoteColor', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 스타일 옵션 */}
+            <div className="settings-section">
+              <h3 className="section-title">✨ 스타일 옵션</h3>
+              <div className="checkbox-group">
+                <input
+                  className="checkbox"
+                  type="checkbox"
+                  id="quoteColor"
+                  checked={config.quoteColorEnabled}
+                  onChange={(e) => handleInputChange('quoteColorEnabled', e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="quoteColor">
+                  큰따옴표 색상 활성화
+                </label>
+              </div>
+              <div className="checkbox-group">
+                <input
+                  className="checkbox"
+                  type="checkbox"
+                  id="quoteGradient"
+                  checked={config.quoteGradientEnabled}
+                  onChange={(e) => handleInputChange('quoteGradientEnabled', e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="quoteGradient">
+                  큰따옴표 그라데이션 효과
+                </label>
+              </div>
+              <div className="checkbox-group">
+                <input
+                  className="checkbox"
+                  type="checkbox"
+                  id="boldText"
+                  checked={config.boldEnabled}
+                  onChange={(e) => handleInputChange('boldEnabled', e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="boldText">
+                  큰따옴표 볼드체
+                </label>
+              </div>
+              <div className="checkbox-group">
+                <input
+                  className="checkbox"
+                  type="checkbox"
+                  id="singleQuoteItalic"
+                  checked={config.singleQuoteItalic}
+                  onChange={(e) => handleInputChange('singleQuoteItalic', e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="singleQuoteItalic">
+                  작은따옴표 기울기
+                </label>
+              </div>
+              <div className="checkbox-group">
+                <input
+                  className="checkbox"
+                  type="checkbox"
+                  id="paragraphIndent"
+                  checked={config.paragraphIndent}
+                  onChange={(e) => handleInputChange('paragraphIndent', e.target.checked)}
+                />
+                <label className="checkbox-label" htmlFor="paragraphIndent">
+                  문단 들여쓰기
+                </label>
+              </div>
+            </div>
+
+            {/* 본문 텍스트 조절 */}
+            <div className="settings-section">
+              <h3 className="section-title">📏 본문 텍스트 조절</h3>
+              <div className="slider-group">
+                <label className="form-label">
+                  폰트 크기: <span className="slider-value">{config.fontSize}px</span>
+                </label>
+                <input
+                  className="slider"
+                  type="range"
+                  min="10"
+                  max="24"
+                  value={config.fontSize}
+                  onChange={(e) => handleInputChange('fontSize', parseInt(e.target.value))}
+                />
+              </div>
+              <div className="slider-group">
+                <label className="form-label">
+                  줄 간격: <span className="slider-value">{config.lineHeight}</span>
+                </label>
+                <input
+                  className="slider"
+                  type="range"
+                  min="1.2"
+                  max="2.5"
+                  step="0.1"
+                  value={config.lineHeight}
+                  onChange={(e) => handleInputChange('lineHeight', parseFloat(e.target.value))}
+                />
+              </div>
+            </div>
+
+            {/* 단어 교환 - 3줄로 확장 */}
+            <div className="settings-section">
+              <h3 className="section-title">🔄 단어 교환</h3>
+              {config.wordReplacements.map((replacement, index) => (
+                <div key={index} className="word-replacement">
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="변경할 단어"
+                    value={replacement.from}
+                    onChange={(e) => handleWordReplacementChange(index, 'from', e.target.value)}
+                  />
+                  <span className="arrow">→</span>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="대체할 단어"
+                    value={replacement.to}
+                    onChange={(e) => handleWordReplacementChange(index, 'to', e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="preview-panel">
+            <div className="preview-header">
+              <h3 className="preview-title">👀 미리보기</h3>
             </div>
             
-            {/* 기본 이미지 선택 */}
-            <div className="form-group">
-              <label className="form-label">🖼️ 기본 이미지</label>
-              <div className="default-images-grid">
-                {defaultImages.map((image) => (
-                  <button
-                    key={image.id}
-                    type="button"
-                    className={`default-image-button ${config.backgroundImage === image.url ? 'active' : ''}`}
-                    onClick={() => handleDefaultImageSelect(image.url)}
-                    title={`${image.name} 배경 이미지 적용`}
-                  >
-                    <img 
-                      src={getPreviewImageUrl(image.url)} 
-                      alt={image.name}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none'
-                      }}
-                    />
-                    <span className="image-name">{image.name}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="hint">
-                💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
-              </div>
+            <div className="preview-container">
+              <div dangerouslySetInnerHTML={{ __html: generatePreviewHTML() }} />
             </div>
-          </div>
-
-          {/* 텍스트 설정 */}
-          <div className="settings-section">
-            <h3 className="section-title">📝 텍스트 설정</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">왼쪽 텍스트</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={config.leftText}
-                  onChange={(e) => handleInputChange('leftText', e.target.value)}
-                  placeholder="왼쪽 텍스트"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">오른쪽 텍스트</label>
-                <input
-                  className="form-input"
-                  type="text"
-                  value={config.rightText}
-                  onChange={(e) => handleInputChange('rightText', e.target.value)}
-                  placeholder="오른쪽 텍스트"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 본문 색상 설정 추가 */}
-          <div className="settings-section">
-            <h3 className="section-title">🎨 본문 색상 설정</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">본문 배경색</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
-                  onChange={(e) => handleInputChange('contentBackgroundColor', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">본문 글자색</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.contentTextColor}
-                  onChange={(e) => handleInputChange('contentTextColor', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 색상 설정 */}
-          <div className="settings-section">
-            <h3 className="section-title">🎨 색상 설정</h3>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">왼쪽 박스 색상 1</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.leftTextColor1}
-                  onChange={(e) => handleInputChange('leftTextColor1', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">왼쪽 박스 색상 2</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.leftTextColor2}
-                  onChange={(e) => handleInputChange('leftTextColor2', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">큰따옴표 색상 1</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.quoteColor1}
-                  onChange={(e) => handleInputChange('quoteColor1', e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">큰따옴표 색상 2</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.quoteColor2}
-                  onChange={(e) => handleInputChange('quoteColor2', e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">작은따옴표 색상</label>
-                <input
-                  className="color-input"
-                  type="color"
-                  value={config.singleQuoteColor}
-                  onChange={(e) => handleInputChange('singleQuoteColor', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 스타일 옵션 */}
-          <div className="settings-section">
-            <h3 className="section-title">✨ 스타일 옵션</h3>
-            <div className="checkbox-group">
-              <input
-                className="checkbox"
-                type="checkbox"
-                id="quoteColor"
-                checked={config.quoteColorEnabled}
-                onChange={(e) => handleInputChange('quoteColorEnabled', e.target.checked)}
-              />
-              <label className="checkbox-label" htmlFor="quoteColor">
-                큰따옴표 색상 활성화
-              </label>
-            </div>
-            <div className="checkbox-group">
-              <input
-                className="checkbox"
-                type="checkbox"
-                id="quoteGradient"
-                checked={config.quoteGradientEnabled}
-                onChange={(e) => handleInputChange('quoteGradientEnabled', e.target.checked)}
-              />
-              <label className="checkbox-label" htmlFor="quoteGradient">
-                큰따옴표 그라데이션 효과
-              </label>
-            </div>
-            <div className="checkbox-group">
-              <input
-                className="checkbox"
-                type="checkbox"
-                id="boldText"
-                checked={config.boldEnabled}
-                onChange={(e) => handleInputChange('boldEnabled', e.target.checked)}
-              />
-              <label className="checkbox-label" htmlFor="boldText">
-                큰따옴표 볼드체
-              </label>
-            </div>
-            <div className="checkbox-group">
-              <input
-                className="checkbox"
-                type="checkbox"
-                id="singleQuoteItalic"
-                checked={config.singleQuoteItalic}
-                onChange={(e) => handleInputChange('singleQuoteItalic', e.target.checked)}
-              />
-              <label className="checkbox-label" htmlFor="singleQuoteItalic">
-                작은따옴표 기울기
-              </label>
-            </div>
-            <div className="checkbox-group">
-              <input
-                className="checkbox"
-                type="checkbox"
-                id="paragraphIndent"
-                checked={config.paragraphIndent}
-                onChange={(e) => handleInputChange('paragraphIndent', e.target.checked)}
-              />
-              <label className="checkbox-label" htmlFor="paragraphIndent">
-                문단 들여쓰기
-              </label>
-            </div>
-          </div>
-
-          {/* 본문 텍스트 조절 */}
-          <div className="settings-section">
-            <h3 className="section-title">📏 본문 텍스트 조절</h3>
-            <div className="slider-group">
-              <label className="form-label">
-                폰트 크기: <span className="slider-value">{config.fontSize}px</span>
-              </label>
-              <input
-                className="slider"
-                type="range"
-                min="10"
-                max="24"
-                value={config.fontSize}
-                onChange={(e) => handleInputChange('fontSize', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="slider-group">
-              <label className="form-label">
-                줄 간격: <span className="slider-value">{config.lineHeight}</span>
-              </label>
-              <input
-                className="slider"
-                type="range"
-                min="1.2"
-                max="2.5"
-                step="0.1"
-                value={config.lineHeight}
-                onChange={(e) => handleInputChange('lineHeight', parseFloat(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* 단어 교환 - 3줄로 확장 */}
-          <div className="settings-section">
-            <h3 className="section-title">🔄 단어 교환</h3>
-            {config.wordReplacements.map((replacement, index) => (
-              <div key={index} className="word-replacement">
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder="변경할 단어"
-                  value={replacement.from}
-                  onChange={(e) => handleWordReplacementChange(index, 'from', e.target.value)}
-                />
-                <span className="arrow">→</span>
-                <input
-                  className="form-input"
-                  type="text"
-                  placeholder="대체할 단어"
-                  value={replacement.to}
-                  onChange={(e) => handleWordReplacementChange(index, 'to', e.target.value)}
-                />
-              </div>
-            ))}
           </div>
         </div>
-
-        <div className="preview-panel">
-          <div className="preview-header">
-            <h3 className="preview-title">👀 미리보기</h3>
-          </div>
-          
-          <div className="preview-container">
-            <div dangerouslySetInnerHTML={{ __html: generateHTML() }} />
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
-}
+} 

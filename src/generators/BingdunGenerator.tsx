@@ -7,8 +7,8 @@ interface WordReplacement {
 
 interface Config {
   backgroundImage: string;
+  profileImage: string;
   leftText: string;
-  rightText: string;
   leftTextColor1: string;
   leftTextColor2: string;
   quoteColor1: string;
@@ -27,6 +27,19 @@ interface Config {
   selectedGenerator: string;
   wordReplacements: WordReplacement[];
   content: string;
+  tag1Text: string;
+  tag2Text: string;
+  tag3Text: string;
+  tagBackgroundColor: string;
+  tagTextColor: string;
+  tagBorderRadius: number;
+  characterDescription: string;
+  showCharacterDescription: boolean;
+  designTheme: 'white' | 'black' | 'blackwhite';
+  tagCount: number;
+  tagBorderColor: string;
+  tagStyle: 'filled' | 'outline';
+  hideProfileSection: boolean;
 }
 
 interface BingdunGeneratorProps {
@@ -43,13 +56,50 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
 
   const normalizeImageUrl = (url: string): string => {
     if (!url) return '';
+    // 데이터 URL (base64)은 그대로 사용
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    // 절대 URL (//로 시작)은 https 프로토콜 추가
     if (url.startsWith('//')) {
       return 'https:' + url;
     }
-    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
+    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
+    if (url.startsWith('/uploads/')) {
+      // 개발환경에서는 localhost 사용
+      if (typeof window !== 'undefined') {
+        return window.location.protocol + '//' + window.location.host + url;
+      }
+      return 'http://localhost:3000' + url;
+    }
+    // http/https가 없으면 https 추가
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return 'https://' + url;
     }
     return url;
+  };
+
+  // 미리보기용 이미지 URL 생성 (프록시를 통해 CORS 우회)
+  const getPreviewImageUrl = (url: string): string => {
+    const normalizedUrl = normalizeImageUrl(url);
+    
+    // 데이터 URL (base64)은 그대로 사용
+    if (normalizedUrl.startsWith('data:')) {
+      return normalizedUrl;
+    }
+    
+    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
+    if (normalizedUrl.includes('/uploads/')) {
+      return normalizedUrl;
+    }
+    
+    // 아카라이브 이미지인 경우 프록시를 통해 로드
+    if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
+      return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+    }
+    
+    // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
+    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
   };
 
   const applyWordReplacements = (text: string): string => {
@@ -66,26 +116,79 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
     const processedContent = applyWordReplacements(config.content);
     const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
     
+    // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
+    const finalImageUrl = normalizeImageUrl(config.backgroundImage);
+    const profileImageUrl = normalizeImageUrl(config.profileImage);
+
+    // 디자인 테마에 따른 색상 설정
+    let themeStyles = {
+      cardBackground: '#ffffff',
+      cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
+      profileBorder: '#ffffff',
+      textColor: '#333',
+      nameColor: '#000000',
+      tagTextColor: config.tagTextColor,
+      tagBackgroundColor: config.tagBackgroundColor,
+      tagBorderColor: '#000000'
+    };
+
+    switch (config.designTheme) {
+      case 'black':
+        themeStyles = {
+          cardBackground: '#1a1a1a',
+          cardGradient: 'linear-gradient(to bottom, #1a1a1a 60%, #0f0f0f)',
+          profileBorder: '#333333',
+          textColor: '#ffffff',
+          nameColor: '#ffffff',
+          tagTextColor: '#ffffff',
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : '#333333',
+          tagBorderColor: '#ffffff'
+        };
+        break;
+      case 'blackwhite':
+        themeStyles = {
+          cardBackground: '#000000',
+          cardGradient: 'linear-gradient(to bottom, #000000 60%, #1a1a1a)',
+          profileBorder: '#ffffff',
+          textColor: '#ffffff',
+          nameColor: '#ffffff',
+          tagTextColor: '#ffffff',
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : '#333333',
+          tagBorderColor: '#ffffff'
+        };
+        break;
+      case 'white':
+      default:
+        themeStyles = {
+          cardBackground: '#ffffff',
+          cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
+          profileBorder: '#ffffff',
+          textColor: '#333',
+          nameColor: '#000000',
+          tagTextColor: config.tagStyle === 'outline' ? '#000000' : config.tagTextColor,
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : config.tagBackgroundColor,
+          tagBorderColor: '#000000'
+        };
+        break;
+    }
+
     const contentHTML = paragraphs.map(paragraph => {
       const trimmedParagraph = paragraph.trim();
       
-      let paragraphStyle = `color: ${config.contentTextColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
+      let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
       if (config.paragraphIndent) {
         paragraphStyle += ' text-indent: 1.5em;';
       }
       
-      // 빙둔형은 동글동글한 말풍선 스타일
+      // 대화 부분 스타일링
       if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
         const beforeQuote = trimmedParagraph.split('"')[0];
         const quote = trimmedParagraph.split('"')[1];
         const afterQuote = trimmedParagraph.split('"')[2] || '';
         
-        let quoteStyle = `font-size: ${config.fontSize}px; padding: 15px 20px; margin: 15px 0; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 25px; display: inline-block; max-width: 85%; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 4px 15px rgba(0,0,0,0.15); position: relative;`;
-        quoteStyle += `&:before { content: ''; position: absolute; top: 50%; left: -10px; width: 0; height: 0; border: 10px solid transparent; border-right-color: ${config.quoteColor1}; transform: translateY(-50%); }`;
-        
         return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="text-align: center; margin: 20px 0;">
-          <div style="${quoteStyle}">🗣️ "${quote}"</div>
+        <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          "${quote}"
         </div>
         ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
       } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
@@ -93,48 +196,82 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         const quote = trimmedParagraph.split("'")[1];
         const afterQuote = trimmedParagraph.split("'")[2] || '';
         
-        let singleQuoteStyle = `color: white; background: ${config.singleQuoteColor}; font-size: ${config.fontSize}px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; padding: 12px 18px; border-radius: 20px; display: inline-block; max-width: 80%; box-shadow: 0 3px 10px rgba(0,0,0,0.1);`;
-        
         return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="text-align: right; margin: 20px 0;">
-          <div style="${singleQuoteStyle}">💭 '${quote}'</div>
+        <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+          '${quote}'
         </div>
         ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
       } else {
-        return `<p style="${paragraphStyle}">📝 ${trimmedParagraph}</p>`;
+        return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
       }
     }).join('');
 
-    const finalImageUrl = normalizeImageUrl(config.backgroundImage);
+    // 태그 스타일 설정
+    const getTagStyle = (tagText: string) => {
+      if (!tagText.trim()) return '';
+      
+      if (config.tagStyle === 'outline') {
+        return `background: ${themeStyles.tagBackgroundColor}; color: ${themeStyles.tagTextColor}; border: 1px solid ${themeStyles.tagBorderColor}; padding: 4px 12px; border-radius: ${config.tagBorderRadius}px; font-size: 12px; display: inline-block; margin: 4px;`;
+      } else {
+        return `background: ${themeStyles.tagBackgroundColor}; color: ${themeStyles.tagTextColor}; padding: 4px 12px; border-radius: ${config.tagBorderRadius}px; font-size: 12px; display: inline-block; margin: 4px;`;
+      }
+    };
 
-    return `<div style="background: ${config.contentBackgroundColor}; border: 3px solid #f0f0f0; border-radius: 30px; overflow: hidden; max-width: 650px; margin: 0 auto; box-shadow: 0 8px 25px rgba(0,0,0,0.1); position: relative;">
-  <!-- 귀여운 헤더 -->
-  <div style="background: linear-gradient(135deg, rgba(${hexToRgb(config.leftTextColor1)}), rgba(${hexToRgb(config.leftTextColor2)})); padding: 25px 30px; text-align: center; position: relative; overflow: hidden;">
-    <div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
-    <div style="position: absolute; bottom: -15px; left: -15px; width: 60px; height: 60px; background: rgba(255,255,255,0.08); border-radius: 50%;"></div>
-    
-    <div style="width: 80px; height: 80px; margin: 0 auto 15px; border-radius: 50%; background-image: url('${finalImageUrl}'); background-size: cover; background-position: center; border: 4px solid rgba(255,255,255,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.2);"></div>
-    
-    <div style="color: white; font-size: 20px; font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.3); margin-bottom: 5px;">🐼 ${config.leftText}</div>
-    <div style="color: rgba(255,255,255,0.9); font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">✨ ${config.rightText}</div>
-  </div>
-  
-  <!-- 귀여운 컨텐츠 영역 -->
-  <div style="padding: 30px; background: linear-gradient(145deg, #fafafa, #ffffff); position: relative;">
-    <div style="position: absolute; top: 10px; right: 15px; font-size: 12px; opacity: 0.3;">🌟</div>
-    <div style="position: absolute; bottom: 15px; left: 15px; font-size: 10px; opacity: 0.3;">💫</div>
-    
-    ${contentHTML}
-    
-    <div style="text-align: center; margin-top: 20px; opacity: 0.6; font-size: 12px;">
-      🎀 빙둔빙둔 🎀
+    // 활성화된 태그들만 렌더링
+    const tags = [config.tag1Text, config.tag2Text, config.tag3Text].slice(0, config.tagCount);
+    const tagHTML = tags.map(tag => 
+      tag.trim() ? `<span style="${getTagStyle(tag)}">${tag}</span>` : ''
+    ).filter(Boolean).join('');
+
+    // 프로필 섹션 HTML (조건부 렌더링)
+    const profileSectionHTML = config.hideProfileSection ? '' : `
+    <div style="width:100%;height:180px;background:url('${finalImageUrl}') center center / cover no-repeat;border-top-left-radius:16px;border-top-right-radius:16px;">
+        <br>
     </div>
-  </div>
-</div>`;
+
+    <div style="margin-top:-48px;text-align:center;">
+        <img style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid ${themeStyles.profileBorder};" src="${profileImageUrl}" class="fr-fic fr-dii">
+    </div>
+
+    <div style="padding:1.5rem;text-align:center;">
+        <h2 style="margin-bottom:0.5rem;font-weight:600;">
+            <em><span style="color: ${themeStyles.nameColor};">${config.leftText}</span></em>
+        </h2>
+
+        ${config.showCharacterDescription ? `<p style="font-size:13px;color:${themeStyles.textColor};line-height:1.6;">${config.characterDescription}</p>` : ''}
+
+        ${tagHTML ? `<div style="margin-top:1rem;text-align:center;">${tagHTML}</div>` : ''}
+    </div>
+
+    <hr style="border-color: ${config.designTheme === 'white' ? '#eee' : '#444'};">`;
+
+    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+
+    ${profileSectionHTML}
+
+    <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
+        ${contentHTML}
+    </div>
+</div><p><br></p>`;
+  };
+
+  // 미리보기 전용 HTML 생성 (프록시 사용)
+  const generatePreviewHTML = (): string => {
+    const processedContent = applyWordReplacements(config.content);
+    const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
+    
+    // 미리보기용 - 프록시 사용 (CORS 우회)
+    const finalImageUrl = getPreviewImageUrl(config.backgroundImage);
+    const profileImageUrl = getPreviewImageUrl(config.profileImage);
+
+    // ... 나머지 로직은 동일하지만 이미지 URL만 프록시 사용
+    return generateHTML().replace(normalizeImageUrl(config.backgroundImage), finalImageUrl)
+                         .replace(normalizeImageUrl(config.profileImage), profileImageUrl);
   };
 
   return {
-    generateHTML
+    generateHTML,
+    generatePreviewHTML
   };
 };
 

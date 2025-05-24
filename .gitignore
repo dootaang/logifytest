@@ -61,4 +61,7 @@ jspm_packages/
 # Windows
 Thumbs.db
 ehthumbs.db
-Desktop.ini 
+Desktop.ini
+
+# Uploaded images
+public/uploads/ 
