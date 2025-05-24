@@ -1,0 +1,31 @@
+{
+  "name": "weblogen-generator",
+  "version": "1.0.0",
+  "description": "웹 로그 생성기 - 커스터마이징 가능한 HTML 생성 도구",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "export": "next build && next export"
+  },
+  "dependencies": {
+    "@types/node": "^22.15.21",
+    "busboy": "^1.6.0",
+    "form-data": "^4.0.0",
+    "jsdom": "^23.0.1",
+    "next": "^15.1.8",
+    "node-fetch": "^3.3.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.22",
+    "@types/react-dom": "^18.3.7"
+  }
+}
