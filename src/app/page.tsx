@@ -536,6 +536,20 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
           console.warn('업로드 실패:', result);
           
           let message = '⚠️ 아카라이브 이미지 업로드에 실패했습니다.\n\n';
+          
+          // 프록시 서버 오류인 경우 상세 정보 표시
+          if (result.details && result.details.proxyError) {
+            message += '🔍 오류 상세:\n';
+            message += `- ${result.details.reason}\n`;
+            if (result.details.solutions) {
+              message += '\n💡 해결 방법:\n';
+              result.details.solutions.forEach((solution: string) => {
+                message += `${solution}\n`;
+              });
+            }
+            message += '\n';
+          }
+          
           message += '📌 권장 해결방법 (가장 확실한 방법):\n\n';
           message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
           message += '2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드\n';
@@ -547,6 +561,9 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
             message += '🔧 개발자용 정보:\n';
             message += '프록시 서버 설정 시 자동 업로드가 가능할 수 있습니다.\n';
             message += '.env.local 파일에 NEXT_PUBLIC_PROXY_URL을 설정하세요.\n\n';
+          } else {
+            message += '⚙️ 프록시 서버 오류:\n';
+            message += '현재 프록시 서버에 문제가 있습니다. 직접 업로드를 이용해주세요.\n\n';
           }
           
           message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';

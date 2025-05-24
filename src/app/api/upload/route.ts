@@ -58,6 +58,31 @@ export async function POST(request: NextRequest) {
         } else {
           const errorText = await response.text()
           console.error('프록시 서버 응답 오류:', response.status, errorText)
+          
+          // 404 오류일 경우 특별한 처리
+          if (response.status === 500 && errorText.includes('404')) {
+            return NextResponse.json({ 
+              success: false,
+              error: '아카라이브 업로드 API에 일시적 문제가 발생했습니다.',
+              message: '아카라이브에서 직접 이미지를 업로드해주세요.',
+              details: {
+                proxyError: errorText,
+                reason: '아카라이브 API 엔드포인트 변경 또는 서버 문제',
+                solutions: [
+                  '1. 몇 분 후 다시 시도해보세요',
+                  '2. 아카라이브에서 직접 업로드 후 URL 복사',
+                  '3. 기본 이미지(유즈, 레몬 등) 사용'
+                ]
+              },
+              instructions: [
+                '1. 아카라이브 게시글 작성 화면으로 이동',
+                '2. 이미지를 업로드하여 에디터에 삽입',
+                '3. 생성된 이미지 HTML 코드를 복사',
+                '4. 여기서 "아카라이브 이미지 URL" 필드에 붙여넣기',
+                '5. URL이 자동으로 추출됩니다'
+              ]
+            }, { status: 400 })
+          }
         }
       } catch (proxyError) {
         console.error('프록시 서버 업로드 실패:', proxyError)
