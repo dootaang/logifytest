@@ -159,6 +159,7 @@ interface BannerConfig {
   showBotName: boolean
   botName: string
   botNameColor: string
+  botNameSize: number
   showProfileImage: boolean
   imageUrl: string
   showProfileBorder: boolean
@@ -609,6 +610,14 @@ const BannerFormLayout = ({
                         <ModernColorPicker
                           value={config.botNameColor}
                           onChange={(color) => handleConfigChange('botNameColor', color)}
+                        />
+                      </ModernFormGroup>
+                      <ModernFormGroup label="봇 이름 크기">
+                        <ModernInput
+                          type="number"
+                          value={config.botNameSize?.toString() || '18'}
+                          onChange={(value) => handleConfigChange('botNameSize', parseInt(value) || 18)}
+                          placeholder="18"
                         />
                       </ModernFormGroup>
                     </ModernFormRow>
