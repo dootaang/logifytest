@@ -12,6 +12,7 @@ import ChatchanFormLayout from '@/components/ChatchanFormLayout'
 import BingdunFormLayout from '@/components/BingdunFormLayout'
 import BookmarkletFormLayout from '@/components/BookmarkletFormLayout'
 import BannerFormLayout from '@/components/BannerFormLayout'
+import JellyFormLayout from '@/components/JellyFormLayout'
 import {
   ModernButton,
   ModernInput,
@@ -46,8 +47,8 @@ export default function Home() {
     return DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light'
   }
 
-  // 기본 설정값
-  const defaultConfig = {
+  // 제리형 기본 설정
+  const defaultJellyConfig = {
     backgroundImage: '//ac-p1.namu.la/20250523sac/4d095bebd72fd7bdc1d6a25b00a235aff5b90b2ddec6fd1b0fcf16ea0cdd3535.png?expires=1748038585&key=347AY1ahV3ud6g0abXibsg',
     leftText: '얼터네이트 헌터즈',
     rightText: '잼민이, 서리',
@@ -66,7 +67,6 @@ export default function Home() {
     lineHeight: 2.3,
     paragraphIndent: false,
     selectedTheme: 'light', // 초기값, 나중에 시스템 테마로 업데이트
-    selectedGenerator: 'jelly',
     wordReplacements: [
       { from: '종원', to: '유저' },
       { from: '', to: '' },
@@ -83,6 +83,12 @@ export default function Home() {
 그녀는 책상 표면에 통합된 세련된 태블릿을 가리켰다. "성함과 연령, 성별을 말씀해 주시겠습니까? 또한, 대략적인 각성 날짜와 시간을 기억하신다면 도움이 될 것입니다. 마지막으로, 현재 보유하고 계신 것으로 파악된 스킬이 있다면 모두 말씀해 주십시오."
 
 최유진은 정보를 입력할 준비를 하며 태블릿 위를 펜으로 가볍게 두드렸다. 그녀는 전문가적인 태도를 잃지 않고 참을성 있게 기다리며, 당신이 생각을 정리하고 헌터로서의 새로운 삶의 첫 공식 단계에 응답할 시간을 주었다.`
+  }
+
+  // 기본 설정값 (전체 앱 설정용)
+  const defaultConfig = {
+    selectedTheme: 'light', // 초기값, 나중에 시스템 테마로 업데이트
+    selectedGenerator: 'jelly'
   }
 
   // 새로운 배너형 기본 설정
@@ -283,39 +289,7 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     hideProfileSection: false
   }
 
-  // 기본 이미지 옵션
-  const defaultImages = [
-    {
-      id: 'yuzu',
-      name: '유즈',
-      url: '//ac-p1.namu.la/20250523sac/7edfca5162ef4fb4da4e8d6dc8dbf976ea4aa7072ac3dd1cb6024116e83b280d.png?expires=1748047045&key=zLtjw_UPp0o0vUTtngyjvQ'
-    },
-    {
-      id: 'lemon',
-      name: '레몬',
-      url: '//ac-p1.namu.la/20250523sac/dfeef29920a64f42b531c81fcc6e242211bff08492f533f081fd77ad943b356a.png?expires=1748047065&key=Rjz_e0fyxdA0c4674Wh3gQ'
-    },
-    {
-      id: 'modern_night',
-      name: '현대밤',
-      url: '//ac-p1.namu.la/20250523sac/4f72665e2ae795ada3c1bd0fb77ffd38d32718eb3ef5b32fe6ffd567df3ed726.png?expires=1748046935&key=Z5CmE5DGij8JhcneI0hfsQ'
-    },
-    {
-      id: 'modern_day',
-      name: '현대낮',
-      url: '//ac-p1.namu.la/20250523sac/cc2fed3a3bc7c841946bbb929b6c27050a1f02a72177293ce07f6f7737863b61.png?expires=1748046982&key=AAPN1YeBm29AMxygW-RfTw'
-    },
-    {
-      id: 'rural_day',
-      name: '시골낮',
-      url: '//ac-p1.namu.la/20250523sac/fd5cddf54957cb39e80d36c68e442a1a976b8c26aacc6295083254007ecb434a.png?expires=1748047016&key=h64giwTquU1vHt-x2Is6mQ'
-    },
-    {
-      id: 'rural_night',
-      name: '시골밤',
-      url: '//ac-p1.namu.la/20250523sac/1aca5ff6f15f46ae00412a5ac00c6c2f8c49b50c7a5fbbf8c9fa8d6aa673a6c3.png?expires=1748048366&key=mqJ-yHiT7X_fDG5hiVk2gA'
-    }
-  ]
+
 
   // localStorage에서 설정 불러오기
   const loadConfig = () => {
@@ -335,6 +309,27 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     } catch (error) {
       console.error('설정을 불러오는 중 오류 발생:', error)
       return { ...defaultConfig, selectedTheme: getSystemTheme() }
+    }
+  }
+
+  // 제리형 설정 불러오기
+  const loadJellyConfig = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('jellyConfig')
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig)
+          return {
+            ...defaultJellyConfig,
+            ...parsedConfig,
+            selectedTheme: getSystemTheme()
+          }
+        }
+      }
+      return { ...defaultJellyConfig, selectedTheme: getSystemTheme() }
+    } catch (error) {
+      console.error('제리형 설정을 불러오는 중 오류 발생:', error)
+      return { ...defaultJellyConfig, selectedTheme: getSystemTheme() }
     }
   }
 
@@ -410,6 +405,17 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }
   }
 
+  // 제리형 설정 저장하기
+  const saveJellyConfig = (newConfig: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('jellyConfig', JSON.stringify(newConfig))
+      }
+    } catch (error) {
+      console.error('제리형 설정을 저장하는 중 오류 발생:', error)
+    }
+  }
+
   // 챗챈형 설정 저장하기
   const saveChatchanConfig = (newConfig: any) => {
     try {
@@ -476,11 +482,13 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
   }
 
   const [config, setConfig] = useState(defaultConfig)
+  const [jellyConfig, setJellyConfig] = useState(defaultJellyConfig)
   const [chatchanConfig, setChatchanConfig] = useState(defaultChatchanConfig)
   const [bingdunConfig, setBingdunConfig] = useState(defaultBingdunConfig)
   const [bookmarkletConfig, setBookmarkletConfig] = useState(defaultBookmarkletConfig)
   const [bannerConfig, setBannerConfig] = useState(defaultBannerConfig)
-  const [extractedFromHtml, setExtractedFromHtml] = useState(false)
+
+  const [jellyGeneratedHTML, setJellyGeneratedHTML] = useState('')
   const [chatchanGeneratedHTML, setChatchanGeneratedHTML] = useState('')
   const [bingdunGeneratedHTML, setBingdunGeneratedHTML] = useState('')
   const [bookmarkletGeneratedHTML, setBookmarkletGeneratedHTML] = useState('')
@@ -493,6 +501,7 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
   // 컴포넌트 마운트 후 설정 로드
   useEffect(() => {
     setConfig(loadConfig())
+    setJellyConfig(loadJellyConfig())
     setChatchanConfig(loadChatchanConfig())
     setBingdunConfig(loadBingdunConfig())
     setBookmarkletConfig(loadBookmarkletConfig())
@@ -548,6 +557,11 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     saveConfig(config)
   }, [config])
 
+  // 제리형 설정이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    saveJellyConfig(jellyConfig)
+  }, [jellyConfig])
+
   // 챗챈 설정이 변경될 때마다 localStorage에 저장
   useEffect(() => {
     saveChatchanConfig(chatchanConfig)
@@ -567,6 +581,15 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
   useEffect(() => {
     saveBannerConfig(bannerConfig)
   }, [bannerConfig])
+
+  // 제리형 설정이 변경될 때마다 자동 HTML 생성
+  useEffect(() => {
+    if (config.selectedGenerator === 'jelly') {
+      const generator = JellyGenerator({ config: jellyConfig })
+      const html = generator.generateHTML()
+      setJellyGeneratedHTML(html)
+    }
+  }, [jellyConfig, config.selectedGenerator])
 
   // 챗챈형 설정이 변경될 때마다 자동 HTML 생성
   useEffect(() => {
@@ -599,7 +622,7 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }
   }, [bannerConfig, config.selectedGenerator])
 
-  // 이미지 HTML에서 URL 추출하는 함수
+  // 이미지 HTML에서 URL 추출하는 함수 (배너형에서만 사용)
   const extractImageUrlFromHtml = (htmlString: string) => {
     const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/i
     const match = htmlString.match(imgTagRegex)
@@ -611,96 +634,9 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     return htmlString
   }
 
-  // 입력값이 HTML인지 확인하는 함수
+  // 입력값이 HTML인지 확인하는 함수 (배너형에서만 사용)
   const isHtmlImageTag = (input: string) => {
     return input.includes('<img') && input.includes('src=')
-  }
-
-  // URL에 프로토콜이 없으면 https를 추가하는 함수
-  const normalizeImageUrl = (url: string) => {
-    if (!url) return ''
-    // 데이터 URL (base64)은 그대로 사용
-    if (url.startsWith('data:')) {
-      return url
-    }
-    // 절대 URL (//로 시작)은 https 프로토콜 추가
-    if (url.startsWith('//')) {
-      return 'https:' + url
-    }
-    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
-    if (url.startsWith('/uploads/')) {
-      // 개발환경에서는 localhost 사용
-      if (typeof window !== 'undefined') {
-        return window.location.protocol + '//' + window.location.host + url
-      }
-      return 'http://localhost:3000' + url
-    }
-    // http/https가 없으면 https 추가
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return 'https://' + url
-    }
-    return url
-  }
-
-  // 이미지 프록시 URL 생성 함수
-  const getProxyImageUrl = (url: string) => {
-    const normalizedUrl = normalizeImageUrl(url)
-    
-    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
-    if (normalizedUrl.includes('/uploads/')) {
-      return normalizedUrl
-    }
-    
-    // 외부 이미지는 프록시를 통해 로드 (CORS 우회)
-    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`
-  }
-
-  // 미리보기용 이미지 URL 생성 함수
-  const getPreviewImageUrl = (url: string) => {
-    return getProxyImageUrl(url)
-  }
-
-  // 클립보드에서 이미지 HTML 붙여넣기 처리
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const pastedText = e.clipboardData.getData('text')
-    if (isHtmlImageTag(pastedText)) {
-      e.preventDefault()
-      const extractedUrl = extractImageUrlFromHtml(pastedText)
-      handleInputChange('backgroundImage', extractedUrl)
-      setExtractedFromHtml(true)
-    }
-  }
-
-  // 단어 교환 적용 함수
-  const applyWordReplacements = (text: string) => {
-    let processedText = text
-    config.wordReplacements.forEach(replacement => {
-      if (replacement.from && replacement.to) {
-        processedText = processedText.replace(new RegExp(replacement.from, 'g'), replacement.to)
-      }
-    })
-    return processedText
-  }
-
-  const handleInputChange = (field: string, value: any) => {
-    let finalValue = value
-    let isFromHtml = false
-
-    // 배경 이미지 필드이고 HTML 형태인 경우 URL 추출
-    if (field === 'backgroundImage' && isHtmlImageTag(value)) {
-      finalValue = extractImageUrlFromHtml(value)
-      isFromHtml = true
-    }
-
-    setConfig(prev => ({
-      ...prev,
-      [field]: finalValue
-    }))
-    
-    // 배경 이미지가 변경될 때 에러 상태 초기화
-    if (field === 'backgroundImage') {
-      setExtractedFromHtml(isFromHtml)
-    }
   }
 
   // 테마 변경 함수
@@ -711,196 +647,42 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }))
   }
 
-  // 초기화 버튼 핸들러
-  const resetToDefault = () => {
-    if (typeof window !== 'undefined' && confirm('모든 설정을 기본값으로 초기화하시겠습니까?')) {
-      setConfig({ ...defaultConfig, selectedTheme: getSystemTheme() })
-      setExtractedFromHtml(false)
-    }
-  }
 
-  // 단어 교환 기능
-  const handleWordReplacementChange = (index: number, field: string, value: string) => {
-    const newReplacements = [...config.wordReplacements]
-    newReplacements[index][field as keyof typeof newReplacements[0]] = value
-    setConfig(prev => ({
-      ...prev,
-      wordReplacements: newReplacements
-    }))
-  }
-
-  // 이미지 파일 업로드 처리
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // 파일 크기 제한 (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('이미지 파일 크기는 5MB 이하여야 합니다.');
-        return;
-      }
-
-      // 이미지 파일 타입 확인
-      if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-      }
-
-      // 업로드 진행 상태 표시
-      const originalFileName = file.name;
-      console.log('이미지 업로드 시작:', originalFileName);
-
-      try {
-        // 업로드 중 상태 표시
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const result = await response.json();
-        console.log('업로드 응답:', result);
-
-        if (result.success && result.url) {
-          handleInputChange('backgroundImage', result.url);
-          setExtractedFromHtml(false);
-          alert('✅ 이미지가 성공적으로 업로드되었습니다!\n\n아카라이브 형식 URL이 생성되었습니다.');
-        } else {
-          // 업로드 실패 시 상세한 안내 제공
-          console.warn('업로드 실패:', result);
-          
-          let message = '⚠️ 아카라이브 이미지 업로드에 실패했습니다.\n\n';
-          
-          // 프록시 서버 오류인 경우 상세 정보 표시
-          if (result.details && result.details.proxyError) {
-            message += '🔍 오류 상세:\n';
-            message += `- ${result.details.reason}\n`;
-            if (result.details.solutions) {
-              message += '\n💡 해결 방법:\n';
-              result.details.solutions.forEach((solution: string) => {
-                message += `${solution}\n`;
-              });
-            }
-            message += '\n';
-          }
-          
-          message += '📌 권장 해결방법 (가장 확실한 방법):\n\n';
-          message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
-          message += '2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드\n';
-          message += '3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사\n';
-          message += '4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
-          message += '5️⃣ URL이 자동으로 추출되어 적용됩니다\n\n';
-          
-          if (!process.env.NEXT_PUBLIC_PROXY_URL) {
-            message += '🔧 개발자용 정보:\n';
-            message += '프록시 서버 설정 시 자동 업로드가 가능할 수 있습니다.\n';
-            message += '.env.local 파일에 NEXT_PUBLIC_PROXY_URL을 설정하세요.\n\n';
-          } else {
-            message += '⚙️ 프록시 서버 오류:\n';
-            message += '현재 프록시 서버에 문제가 있습니다. 직접 업로드를 이용해주세요.\n\n';
-          }
-          
-          message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
-          
-          alert(message);
-        }
-      } catch (error) {
-        console.error('업로드 네트워크 오류:', error);
-        
-        let message = '❌ 네트워크 오류가 발생했습니다.\n\n';
-        message += '📌 권장 해결방법:\n\n';
-        message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
-        message += '2️⃣ 이미지를 업로드하여 에디터에 삽입\n';
-        message += '3️⃣ 생성된 이미지 HTML 코드를 복사\n';
-        message += '4️⃣ 여기서 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
-        message += '5️⃣ URL이 자동으로 추출됩니다\n\n';
-        message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
-        
-        alert(message);
-      }
-    }
-  };
-
-  // 기본 이미지 선택 핸들러
-  const handleDefaultImageSelect = (imageUrl: string) => {
-    handleInputChange('backgroundImage', imageUrl)
-    setExtractedFromHtml(false)
-  }
-
-  const generateHTML = () => {
-    let generator
-    
-    switch (config.selectedGenerator) {
-      case 'bookmarklet':
-        generator = BookmarkletGenerator({ config: bookmarkletConfig })
-        break
-      case 'banner':
-        generator = BannerGenerator({ config })
-        break
-      case 'jelly':
-        generator = JellyGenerator({ config })
-        break
-      case 'chatchan':
-        generator = ChatchanGenerator({ config })
-        break
-      case 'bingdun':
-        generator = BingdunGenerator({ config: bingdunConfig })
-        break
-      default:
-        generator = JellyGenerator({ config })
-        break
-    }
-    
-    return generator.generateHTML()
-  }
-
-  // 미리보기용 HTML 생성 (프록시 사용)
-  const generatePreviewHTML = () => {
-    let generator
-    
-    switch (config.selectedGenerator) {
-      case 'bookmarklet':
-        generator = BookmarkletGenerator({ config: bookmarkletConfig })
-        return generator.generateHTML() // 북마클릿형은 이미지 없음
-      case 'banner':
-        generator = BannerGenerator({ config })
-        return generator.generateHTML() // 배너형은 이미지 없음
-      case 'jelly':
-        generator = JellyGenerator({ config })
-        return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML()
-      case 'chatchan':
-        generator = ChatchanGenerator({ config })
-        return generator.generateHTML() // 챗챈형은 이미지 없음
-      case 'bingdun':
-        // 빙둔형은 별도 컴포넌트에서 처리
-        return ''
-      default:
-        generator = JellyGenerator({ config })
-        return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML()
-    }
-  }
-
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    return result 
-      ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}, 1`
-      : '0, 0, 0, 1'
-  }
-
-  const copyToClipboard = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(generateHTML()).then(() => {
-        alert('HTML 코드가 클립보드에 복사되었습니다!')
-      })
-    }
-  }
 
   const handleGeneratorChange = (generatorType: string) => {
     setConfig(prev => ({
       ...prev,
       selectedGenerator: generatorType
     }))
+  }
+
+  // 제리형 핸들러 함수들
+  const handleJellyConfigChange = (newConfig: Partial<typeof defaultJellyConfig>) => {
+    setJellyConfig(prev => ({
+      ...prev,
+      ...newConfig
+    }))
+  }
+
+  const handleJellyGenerateHTML = () => {
+    const generator = JellyGenerator({ config: jellyConfig })
+    const html = generator.generateHTML()
+    setJellyGeneratedHTML(html)
+  }
+
+  const handleJellyCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(jellyGeneratedHTML).then(() => {
+        alert('제리형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
+    }
+  }
+
+  const handleJellyReset = () => {
+    if (typeof window !== 'undefined' && confirm('제리형 설정을 기본값으로 초기화하시겠습니까?')) {
+      setJellyConfig({ ...defaultJellyConfig, selectedTheme: getSystemTheme() })
+      setJellyGeneratedHTML('')
+    }
   }
 
   // 챗챈형 핸들러 함수들 추가
@@ -1093,7 +875,16 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
       </div>
 
       {/* 선택된 제너레이터에 따라 전용 레이아웃 렌더링 */}
-      {config.selectedGenerator === 'chatchan' ? (
+      {config.selectedGenerator === 'jelly' ? (
+        <JellyFormLayout
+          config={jellyConfig}
+          onConfigChange={handleJellyConfigChange}
+          generatedHTML={jellyGeneratedHTML}
+          onGenerateHTML={handleJellyGenerateHTML}
+          onCopyHTML={handleJellyCopyHTML}
+          onReset={handleJellyReset}
+        />
+      ) : config.selectedGenerator === 'chatchan' ? (
         <ChatchanFormLayout
           config={chatchanConfig}
           onConfigChange={handleChatchanConfigChange}
@@ -1130,261 +921,8 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
           onReset={handleBannerReset}
         />
       ) : (
-        <div className="main-layout">
-          <div className="settings-panel">
-            {/* 본문 내용을 최상단으로 이동 */}
-            <ModernSection title="📄 본문 내용">
-              <ModernFormGroup>
-                <ModernTextarea
-                  value={config.content}
-                  onChange={(value) => handleInputChange('content', value)}
-                  placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
-                  rows={12}
-                />
-              </ModernFormGroup>
-              
-              {/* 액션 버튼도 함께 최상단에 배치 */}
-              <div className="button-group">
-                <ModernButton onClick={copyToClipboard}>
-                  📋 HTML 복사
-                </ModernButton>
-                <ModernButton danger onClick={resetToDefault}>
-                  🔄 초기화
-                </ModernButton>
-              </div>
-            </ModernSection>
-
-            {/* 이미지 설정 */}
-            <ModernSection title="🖼️ 이미지 설정">
-              {/* 이미지 업로드 */}
-              <ModernFormGroup label="📁 이미지 파일 업로드 (실험적 기능)">
-                <input
-                  className="form-input"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-                <ModernHint>
-                  ⚠️ 아카라이브 호환성 문제로 실패할 수 있습니다. 권장: 아카라이브에서 직접 업로드
-                </ModernHint>
-              </ModernFormGroup>
-
-              <ModernFormGroup>
-                <div className="divider-text">권장 방법</div>
-              </ModernFormGroup>
-
-              <ModernFormGroup label="🔗 아카라이브 이미지 URL (권장)">
-                <ModernInput
-                  value={config.backgroundImage.startsWith('data:') ? '' : config.backgroundImage}
-                  onChange={(value) => handleInputChange('backgroundImage', value)}
-                  onPaste={handlePaste}
-                  placeholder="아카라이브 이미지 HTML 또는 URL을 입력하세요"
-                />
-                <ModernHint>
-                  💡 <strong>권장 방법:</strong> <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 글쓰기</a>에서 이미지 업로드 → HTML 코드 복사 → 여기에 붙여넣기
-                </ModernHint>
-                <ModernHint>
-                  📋 아카라이브 이미지 HTML 형식: &lt;img src="//ac-p1.namu.la/..." /&gt;
-                </ModernHint>
-                <ModernHint>
-                  <p><strong>📌 이미지 업로드 방법 (가장 확실한 방법):</strong></p>
-                  <p>1️⃣ <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 게시글 작성 화면</a>으로 이동</p>
-                  <p>2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드</p>
-                  <p>3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사</p>
-                  <p>4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기</p>
-                  <p>5️⃣ URL이 자동으로 추출되어 적용됩니다</p>
-                </ModernHint>
-                {extractedFromHtml && (
-                  <ModernHint type="success">
-                    ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
-                  </ModernHint>
-                )}
-              </ModernFormGroup>
-              
-              {/* 기본 이미지 선택 */}
-              <ModernFormGroup label="🖼️ 기본 이미지">
-                <div className="default-images-grid">
-                  {defaultImages.map((image) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      className={`default-image-button ${config.backgroundImage === image.url ? 'active' : ''}`}
-                      onClick={() => handleDefaultImageSelect(image.url)}
-                      title={`${image.name} 배경 이미지 적용`}
-                    >
-                      <img 
-                        src={getPreviewImageUrl(image.url)} 
-                        alt={image.name}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none'
-                        }}
-                      />
-                      <span className="image-name">{image.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <ModernHint>
-                  💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
-                </ModernHint>
-              </ModernFormGroup>
-            </ModernSection>
-
-            {/* 텍스트 설정 */}
-            <ModernSection title="📝 텍스트 설정">
-              <ModernFormRow>
-                <ModernFormGroup label="왼쪽 텍스트">
-                  <ModernInput
-                    value={config.leftText}
-                    onChange={(value) => handleInputChange('leftText', value)}
-                    placeholder="왼쪽 텍스트"
-                  />
-                </ModernFormGroup>
-                <ModernFormGroup label="오른쪽 텍스트">
-                  <ModernInput
-                    value={config.rightText}
-                    onChange={(value) => handleInputChange('rightText', value)}
-                    placeholder="오른쪽 텍스트"
-                  />
-                </ModernFormGroup>
-              </ModernFormRow>
-            </ModernSection>
-
-            {/* 본문 색상 설정 추가 */}
-            <ModernSection title="🎨 본문 색상 설정">
-              <ModernFormRow>
-                <ModernFormGroup label="본문 배경색">
-                  <ModernColorPicker
-                    value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
-                    onChange={(value) => handleInputChange('contentBackgroundColor', value)}
-                  />
-                </ModernFormGroup>
-                <ModernFormGroup label="본문 글자색">
-                  <ModernColorPicker
-                    value={config.contentTextColor}
-                    onChange={(value) => handleInputChange('contentTextColor', value)}
-                  />
-                </ModernFormGroup>
-              </ModernFormRow>
-            </ModernSection>
-
-            {/* 색상 설정 */}
-            <ModernSection title="🎨 색상 설정">
-              <ModernFormRow>
-                <ModernFormGroup label="왼쪽 박스 색상 1">
-                  <ModernColorPicker
-                    value={config.leftTextColor1}
-                    onChange={(value) => handleInputChange('leftTextColor1', value)}
-                  />
-                </ModernFormGroup>
-                <ModernFormGroup label="왼쪽 박스 색상 2">
-                  <ModernColorPicker
-                    value={config.leftTextColor2}
-                    onChange={(value) => handleInputChange('leftTextColor2', value)}
-                  />
-                </ModernFormGroup>
-              </ModernFormRow>
-              <ModernFormRow>
-                <ModernFormGroup label="큰따옴표 색상 1">
-                  <ModernColorPicker
-                    value={config.quoteColor1}
-                    onChange={(value) => handleInputChange('quoteColor1', value)}
-                  />
-                </ModernFormGroup>
-                <ModernFormGroup label="큰따옴표 색상 2">
-                  <ModernColorPicker
-                    value={config.quoteColor2}
-                    onChange={(value) => handleInputChange('quoteColor2', value)}
-                  />
-                </ModernFormGroup>
-              </ModernFormRow>
-              <ModernFormRow>
-                <ModernFormGroup label="작은따옴표 색상">
-                  <ModernColorPicker
-                    value={config.singleQuoteColor}
-                    onChange={(value) => handleInputChange('singleQuoteColor', value)}
-                  />
-                </ModernFormGroup>
-              </ModernFormRow>
-            </ModernSection>
-
-            {/* 스타일 옵션 */}
-            <ModernSection title="✨ 스타일 옵션">
-              <ModernCheckbox
-                checked={config.quoteColorEnabled}
-                onChange={(checked) => handleInputChange('quoteColorEnabled', checked)}
-                label="큰따옴표 색상 활성화"
-              />
-              <ModernCheckbox
-                checked={config.quoteGradientEnabled}
-                onChange={(checked) => handleInputChange('quoteGradientEnabled', checked)}
-                label="큰따옴표 그라데이션 효과"
-              />
-              <ModernCheckbox
-                checked={config.boldEnabled}
-                onChange={(checked) => handleInputChange('boldEnabled', checked)}
-                label="큰따옴표 볼드체"
-              />
-              <ModernCheckbox
-                checked={config.singleQuoteItalic}
-                onChange={(checked) => handleInputChange('singleQuoteItalic', checked)}
-                label="작은따옴표 기울기"
-              />
-              <ModernCheckbox
-                checked={config.paragraphIndent}
-                onChange={(checked) => handleInputChange('paragraphIndent', checked)}
-                label="문단 들여쓰기"
-              />
-            </ModernSection>
-
-            {/* 본문 텍스트 조절 */}
-            <ModernSection title="📏 본문 텍스트 조절">
-              <ModernSlider
-                value={config.fontSize}
-                onChange={(value) => handleInputChange('fontSize', value)}
-                min={10}
-                max={24}
-                step={1}
-                label="폰트 크기"
-              />
-              <ModernSlider
-                value={config.lineHeight}
-                onChange={(value) => handleInputChange('lineHeight', value)}
-                min={1.2}
-                max={2.5}
-                step={0.1}
-                label="줄 간격"
-              />
-            </ModernSection>
-
-            {/* 단어 교환 - 3줄로 확장 */}
-            <ModernSection title="🔄 단어 교환">
-              {config.wordReplacements.map((replacement, index) => (
-                <div key={index} className="word-replacement">
-                  <ModernInput
-                    value={replacement.from}
-                    onChange={(value) => handleWordReplacementChange(index, 'from', value)}
-                    placeholder="변경할 단어"
-                  />
-                  <span className="arrow">→</span>
-                  <ModernInput
-                    value={replacement.to}
-                    onChange={(value) => handleWordReplacementChange(index, 'to', value)}
-                    placeholder="대체할 단어"
-                  />
-                </div>
-              ))}
-            </ModernSection>
-          </div>
-
-          <div className="preview-panel">
-            <div className="preview-header">
-              <h3 className="preview-title">👀 미리보기</h3>
-            </div>
-            
-            <div className="preview-container">
-              <div dangerouslySetInnerHTML={{ __html: generatePreviewHTML() }} />
-            </div>
-          </div>
+        <div>
+          <p>알 수 없는 생성기가 선택되었습니다.</p>
         </div>
       )}
     </div>
