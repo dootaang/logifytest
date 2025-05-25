@@ -4,24 +4,46 @@ import React, { useState, useEffect } from 'react'
 import JellyGenerator from '@/generators/JellyGenerator'
 import BookmarkletGenerator from '@/generators/BookmarkletGenerator'
 import BannerGenerator from '@/generators/BannerGenerator'
+import BannerGeneratorV2 from '@/generators/BannerGeneratorV2'
 import ChatchanGenerator from '@/generators/ChatchanGenerator'
 import BingdunGenerator from '@/generators/BingdunGenerator'
 import { useChatchanGeneratorV2 } from '@/generators/ChatchanGeneratorV2'
 import ChatchanFormLayout from '@/components/ChatchanFormLayout'
 import BingdunFormLayout from '@/components/BingdunFormLayout'
+import BookmarkletFormLayout from '@/components/BookmarkletFormLayout'
+import BannerFormLayout from '@/components/BannerFormLayout'
+import {
+  ModernButton,
+  ModernInput,
+  ModernTextarea,
+  ModernCheckbox,
+  ModernColorPicker,
+  ModernSlider,
+  ModernFormGroup,
+  ModernFormRow,
+  ModernSection,
+  ModernHint,
+  ModernDarkModeToggle
+} from '@/components/ModernComponents'
+import { DarkModeUtils } from '@/utils/styles'
 
 interface WordReplacement {
   from: string;
   to: string;
 }
 
+interface TagStyle {
+  text: string
+  color: string
+  text_color: string
+  transparent_background: boolean
+  border_color: string
+}
+
 export default function Home() {
-  // 다크모드 감지 함수
+  // 다크모드 감지 함수 (새로운 방식)
   const getSystemTheme = () => {
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-    return 'light'
+    return DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light'
   }
 
   // 기본 설정값
@@ -61,6 +83,82 @@ export default function Home() {
 그녀는 책상 표면에 통합된 세련된 태블릿을 가리켰다. "성함과 연령, 성별을 말씀해 주시겠습니까? 또한, 대략적인 각성 날짜와 시간을 기억하신다면 도움이 될 것입니다. 마지막으로, 현재 보유하고 계신 것으로 파악된 스킬이 있다면 모두 말씀해 주십시오."
 
 최유진은 정보를 입력할 준비를 하며 태블릿 위를 펜으로 가볍게 두드렸다. 그녀는 전문가적인 태도를 잃지 않고 참을성 있게 기다리며, 당신이 생각을 정리하고 헌터로서의 새로운 삶의 첫 공식 단계에 응답할 시간을 주었다.`
+  }
+
+  // 새로운 배너형 기본 설정
+  const defaultBannerConfig = {
+    // 프로필 설정
+    showProfile: true,
+    showBotName: true,
+    botName: '얼터네이트 헌터즈',
+    botNameColor: '#ffffff',
+    botNameSize: 20,
+    showProfileImage: true,
+    imageUrl: '//ac.namu.la/20250420sac/f92bfc5a0b19d1187f4707cb9461a8825e9be24987e484d1ed2ce5c369cd1e59.png?expires=1748181064&key=_2JVV7W5bB-720Zu92NKNw',
+    showProfileBorder: false,
+    profileBorderColor: '#ffffff',
+    showProfileShadow: true,
+    showDivider: true,
+    dividerColor: '#b8bacf',
+    
+    // 태그 설정
+    showTags: true,
+    tags: [
+      { text: '투명배경', color: '#ffffff', text_color: '#ffffff', transparent_background: true, border_color: '#ffffff' },
+      { text: '텍스트-테두리', color: '#ffffff', text_color: '#ffffff', transparent_background: true, border_color: '#ffffff' },
+      { text: '하얀색', color: '#ffffff', text_color: '#ffffff', transparent_background: true, border_color: '#ffffff' }
+    ] as TagStyle[],
+    
+    // 디자인 설정 (다크모드 베이직으로 설정)
+    selectedTemplate: '다크모드 베이직',
+    outerBoxColor: '#2c2c2c',
+    innerBoxColor: '#1a1a1a',
+    showInnerBox: false,
+    useBoxBorder: false,
+    boxBorderColor: '#e2e8f0',
+    boxBorderThickness: 1,
+    shadowIntensity: 8,
+    gradientStartColor: '#2c2c2c',
+    gradientEndColor: '#1a1a1a',
+    useGradientBackground: false,
+    
+    // 텍스트 설정
+    useTextSize: true,
+    textSize: 14,
+    useTextIndent: true,
+    textIndent: 20,
+    dialogColor: '#ffffff',
+    dialogBold: true,
+    dialogNewline: true,
+    narrationColor: '#e0e0e0',
+    innerThoughtsColor: '#b0b0b0',
+    innerThoughtsBold: false,
+    removeAsterisk: true,
+    convertEllipsis: true,
+    
+    // 단어 변경
+    wordReplacements: [
+      { from: '', to: '' },
+      { from: '', to: '' },
+      { from: '', to: '' }
+    ] as WordReplacement[],
+    
+    // 기본 설정
+    content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다. 제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
+
+당신은 등록 및 초기 측정라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다. 블레이저에 달린 코팅된 ID 배지는 그녀의 이름과 직책(등록 및 평가 팀장)을 확인시켜 주었다.
+
+그녀가 단말기에서 고개를 들자, 그녀의 시선이 당신과 정면으로 마주쳤다. 거기에는 어떤 판단도 없이, 그저 차분하고 전문적인 평가만이 담겨 있었다. 그녀는 약간의 연습된 미소를 지어 보였다.
+
+"헌터 협회에 오신 것을 환영합니다." 최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다. "각성을 축하드립니다. 공식 등급 측정을 진행하기 전에, 헌터 프로필에 기록해야 할 몇 가지 필수 세부 정보가 있습니다. 이는 모든 신규 등록자에게 적용되는 표준 절차입니다."
+
+그녀는 책상 표면에 통합된 세련된 태블릿을 가리켰다. "성함과 연령, 성별을 말씀해 주시겠습니까? 또한, 대략적인 각성 날짜와 시간을 기억하신다면 도움이 될 것입니다. 마지막으로, 현재 보유하고 계신 것으로 파악된 스킬이 있다면 모두 말씀해 주십시오."
+
+최유진은 정보를 입력할 준비를 하며 태블릿 위를 펜으로 가볍게 두드렸다. 그녀는 전문가적인 태도를 잃지 않고 참을성 있게 기다리며, 당신이 생각을 정리하고 헌터로서의 새로운 삶의 첫 공식 단계에 응답할 시간을 주었다.`,
+    contentBackgroundColor: '#1a1a1a',
+    contentTextColor: '#e0e0e0',
+    fontSize: 15,
+    lineHeight: 1.8
   }
 
   // 챗챈형 기본 설정
@@ -103,10 +201,38 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     ]
   }
 
+  // 북마클릿형 기본 설정
+  const defaultBookmarkletConfig = {
+    content: `그는 몸을 바로 세웠다. 그녀보다 약간 큰 키로 내려다보며, 그 어이없을 정도로 자신만만한 미소는 여전히 얼굴에 확고히 자리 잡고 있었다. 마치 복잡한 방정식을 풀고 반박 불가능한 증명을 제시한 것처럼. 무도회장 바닥에 무릎을 꿇고 그녀의&hellip; 감정적 후견인이 되겠다고 선언하는 것이 포함된 증명 말이다.
+
+하퍼는 그를 올려다보았다. 연회장의 소란스러운 소음이 그에게서 뿜어져 나오는 순수하고 집중된 대담함 때문에 순간 잠잠해졌다. 그가 잡았던, 그가 <span style="color: rgb(241, 250, 140); font-style: italic;">키스했던</span> 그녀의 손은 전혀 낯선 잔열로 얼얼했다.
+
+'내 성격을 좋아한다고?'
+
+그 생각은 의식적인 판단이라기보다는 그녀의 내적 처리 과정에서 발생한 오류에 가까웠다. 0으로 나누는 것처럼. 남자들은 그녀의 성격을 <span style="color: rgb(241, 250, 140); font-style: italic;">좋아하지</span> 않았다. 그녀의 재능, 명성, 부 때문에 참아주거나, 아니면 너무 둔감해서 너무 늦을 때까지 그 날카로운 모서리를 알아보지 못했을 뿐이다. 그런데 <span style="color: rgb(241, 250, 140); font-style: italic;">좋아한다고?</span> 그걸&hellip; 흥미롭다고?
+
+<span style="color: rgb(255, 184, 108);">&ldquo;당신의 평가는&hellip;&rdquo;</span> 그녀가 입을 열었다. 목소리는 익숙한 딱딱 끊어지는 정확성을 되찾았지만, 배신자처럼 쉬어 있는 기색이 남아 있었다. <span style="color: rgb(255, 184, 108);">&ldquo;&hellip;근본적으로 결함이 있습니다. 당신은 피상적인 관찰 &ndash; 그것도 싸구려 치킨과 무너지는 나무 탑이 포함된, 극도로 스트레스받는 비정상적인 상호작용 중에 얻은 관찰을 말이죠 &ndash; 을 진정한 심리학적 통찰력으로 착각하고 있어요.&rdquo;</span>`,
+    backgroundColor: '#000000',
+    textColor: '#f8f8f2',
+    highlightColor: '#f1fa8c',
+    emphasisColor: '#8be9fd',
+    fontSize: 15,
+    lineHeight: 1.6,
+    containerWidth: 800,
+    borderRadius: 16,
+    padding: 2,
+    boxShadow: '0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)',
+    wordReplacements: [
+      { from: '', to: '' },
+      { from: '', to: '' },
+      { from: '', to: '' }
+    ]
+  }
+
   // 빙둔형 기본 설정
   const defaultBingdunConfig = {
-    backgroundImage: '//ac-p1.namu.la/20250516sac/91f3aabe28fcff8e67a1aa336cf1b60e4ee8cf01452bbb2514d56a74a3ba83bb.png?expires=1747386568&key=8Io45t13Glg5SKKqNz9B0A',
-    profileImage: '//ac.namu.la/20250516sac/88097ac0a07765055681e2aade1a5478e7b75002857cf6ccee5438fae6ea24c9.png?expires=1747386568&key=e3mzkfbEBkrXWZoX1jVAdQ',
+    backgroundImage: '//ac.namu.la/20250524sac/e9f61a7d8296cebf91c7f24993a7dfbb60397526fc1bace99002290ec003210d.png?expires=1748181064&key=OlrYFmy3pBJGG6ALSRNqkQ',
+    profileImage: '//ac.namu.la/20250524sac/a1dad3ef01eed80f878d3c3232020367f89ca1b3cce2b29235e3982fdbbf559d.png?expires=1748181064&key=zHAFS2P_g7w71aZW2j51fA',
     leftText: '얼터네이트 헌터즈',
     leftTextColor1: '#ffffff',
     leftTextColor2: '#89D9D8',
@@ -129,13 +255,19 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
       { from: '', to: '' },
       { from: '', to: '' }
     ],
-    content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다.
+    content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다. 제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
 
-"헌터 협회에 오신 것을 환영합니다." 최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다.
+당신은 등록 및 초기 측정라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다. 블레이저에 달린 코팅된 ID 배지는 그녀의 이름과 직책(등록 및 평가 팀장)을 확인시켜 주었다.
 
-그녀는 약간의 연습된 미소를 지어 보였다.
+그녀가 단말기에서 고개를 들자, 그녀의 시선이 당신과 정면으로 마주쳤다. 거기에는 어떤 판단도 없이, 그저 차분하고 전문적인 평가만이 담겨 있었다. 그녀는 약간의 연습된 미소를 지어 보였다.
 
-'이제 새로운 시작이군.' 당신은 마음속으로 생각했다.`,
+"헌터 협회에 오신 것을 환영합니다." 최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다. "각성을 축하드립니다. 공식 등급 측정을 진행하기 전에, 헌터 프로필에 기록해야 할 몇 가지 필수 세부 정보가 있습니다. 이는 모든 신규 등록자에게 적용되는 표준 절차입니다."
+
+그녀는 책상 표면에 통합된 세련된 태블릿을 가리켰다. "성함과 연령, 성별을 말씀해 주시겠습니까? 또한, 대략적인 각성 날짜와 시간을 기억하신다면 도움이 될 것입니다. 마지막으로, 현재 보유하고 계신 것으로 파악된 스킬이 있다면 모두 말씀해 주십시오."
+
+최유진은 정보를 입력할 준비를 하며 태블릿 위를 펜으로 가볍게 두드렸다. 그녀는 전문가적인 태도를 잃지 않고 참을성 있게 기다리며, 당신이 생각을 정리하고 헌터로서의 새로운 삶의 첫 공식 단계에 응답할 시간을 주었다.
+
+'마라탕후루 먹고싶다.' 최유진은 마음속으로 생각했다.`,
     tag1Text: '프롬프트',
     tag2Text: '번역',
     tag3Text: '사용 모델',
@@ -248,6 +380,25 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }
   }
 
+  // 북마클릿형 설정 불러오기
+  const loadBookmarkletConfig = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('bookmarkletConfig')
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig)
+          return {
+            ...defaultBookmarkletConfig,
+            ...parsedConfig
+          }
+        }
+      }
+    } catch (error) {
+      console.error('북마클릿 설정을 불러오는 중 오류 발생:', error)
+    }
+    return defaultBookmarkletConfig
+  }
+
   // localStorage에 설정 저장하기
   const saveConfig = (newConfig: any) => {
     try {
@@ -281,11 +432,60 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }
   }
 
+  // 북마클릿형 설정 저장하기
+  const saveBookmarkletConfig = (newConfig: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bookmarkletConfig', JSON.stringify(newConfig))
+      }
+    } catch (error) {
+      console.error('북마클릿 설정을 저장하는 중 오류 발생:', error)
+    }
+  }
+
+  // 배너형 설정 불러오기
+  const loadBannerConfig = () => {
+    try {
+      if (typeof window !== 'undefined') {
+        const savedConfig = localStorage.getItem('bannerConfig')
+        if (savedConfig) {
+          const parsedConfig = JSON.parse(savedConfig)
+          return {
+            ...defaultBannerConfig,
+            ...parsedConfig,
+            tags: parsedConfig.tags || defaultBannerConfig.tags,
+            wordReplacements: parsedConfig.wordReplacements || defaultBannerConfig.wordReplacements
+          }
+        }
+      }
+    } catch (error) {
+      console.error('배너 설정을 불러오는 중 오류 발생:', error)
+    }
+    return defaultBannerConfig
+  }
+
+  // 배너형 설정 저장하기
+  const saveBannerConfig = (newConfig: any) => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bannerConfig', JSON.stringify(newConfig))
+      }
+    } catch (error) {
+      console.error('배너 설정을 저장하는 중 오류 발생:', error)
+    }
+  }
+
   const [config, setConfig] = useState(defaultConfig)
   const [chatchanConfig, setChatchanConfig] = useState(defaultChatchanConfig)
   const [bingdunConfig, setBingdunConfig] = useState(defaultBingdunConfig)
+  const [bookmarkletConfig, setBookmarkletConfig] = useState(defaultBookmarkletConfig)
+  const [bannerConfig, setBannerConfig] = useState(defaultBannerConfig)
   const [extractedFromHtml, setExtractedFromHtml] = useState(false)
   const [chatchanGeneratedHTML, setChatchanGeneratedHTML] = useState('')
+  const [bingdunGeneratedHTML, setBingdunGeneratedHTML] = useState('')
+  const [bookmarkletGeneratedHTML, setBookmarkletGeneratedHTML] = useState('')
+  const [bannerGeneratedHTML, setBannerGeneratedHTML] = useState('')
+  const [bannerPreviewHTML, setBannerPreviewHTML] = useState('')
 
   // 챗챈 생성기 훅
   const { generateHTML: generateChatchanHTML } = useChatchanGeneratorV2(chatchanConfig)
@@ -295,6 +495,8 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     setConfig(loadConfig())
     setChatchanConfig(loadChatchanConfig())
     setBingdunConfig(loadBingdunConfig())
+    setBookmarkletConfig(loadBookmarkletConfig())
+    setBannerConfig(loadBannerConfig())
   }, [])
 
   // 빙둔형 초기 HTML 생성
@@ -305,6 +507,15 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
       setBingdunGeneratedHTML(html)
     }
   }, [bingdunConfig.content !== defaultBingdunConfig.content]) // 초기 로드 완료 후에만 실행
+
+  // 북마클릿형 설정이 변경될 때마다 자동 HTML 생성
+  useEffect(() => {
+    if (config.selectedGenerator === 'bookmarklet') {
+      const generator = BookmarkletGenerator({ config: bookmarkletConfig })
+      const html = generator.generateHTML()
+      setBookmarkletGeneratedHTML(html)
+    }
+  }, [bookmarkletConfig, config.selectedGenerator])
 
   // 테마 적용
   useEffect(() => {
@@ -347,6 +558,16 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     saveBingdunConfig(bingdunConfig)
   }, [bingdunConfig])
 
+  // 북마클릿형 설정이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    saveBookmarkletConfig(bookmarkletConfig)
+  }, [bookmarkletConfig])
+
+  // 배너형 설정이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    saveBannerConfig(bannerConfig)
+  }, [bannerConfig])
+
   // 챗챈형 설정이 변경될 때마다 자동 HTML 생성
   useEffect(() => {
     if (config.selectedGenerator === 'chatchan') {
@@ -363,6 +584,20 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
       setBingdunGeneratedHTML(html)
     }
   }, [bingdunConfig, config.selectedGenerator])
+
+  // 배너형 설정이 변경될 때마다 자동 HTML 생성
+  useEffect(() => {
+    if (config.selectedGenerator === 'banner') {
+      try {
+        const generator = BannerGeneratorV2({ config: bannerConfig })
+        const html = generator.generateHTML()
+        setBannerGeneratedHTML(html)
+      } catch (error) {
+        console.error('배너형 HTML 생성 오류:', error)
+        setBannerGeneratedHTML('<p>HTML 생성 중 오류가 발생했습니다.</p>')
+      }
+    }
+  }, [bannerConfig, config.selectedGenerator])
 
   // 이미지 HTML에서 URL 추출하는 함수
   const extractImageUrlFromHtml = (htmlString: string) => {
@@ -598,7 +833,7 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     
     switch (config.selectedGenerator) {
       case 'bookmarklet':
-        generator = BookmarkletGenerator({ config })
+        generator = BookmarkletGenerator({ config: bookmarkletConfig })
         break
       case 'banner':
         generator = BannerGenerator({ config })
@@ -626,7 +861,7 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     
     switch (config.selectedGenerator) {
       case 'bookmarklet':
-        generator = BookmarkletGenerator({ config })
+        generator = BookmarkletGenerator({ config: bookmarkletConfig })
         return generator.generateHTML() // 북마클릿형은 이미지 없음
       case 'banner':
         generator = BannerGenerator({ config })
@@ -697,8 +932,6 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
   }
 
   // 빙둔형 핸들러 함수들
-  const [bingdunGeneratedHTML, setBingdunGeneratedHTML] = useState('')
-
   const handleBingdunConfigChange = (newConfig: any) => {
     setBingdunConfig(prev => ({
       ...prev,
@@ -727,12 +960,87 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
     }
   }
 
+  // 북마클릿형 핸들러 함수들
+  const handleBookmarkletConfigChange = (newConfig: Partial<typeof defaultBookmarkletConfig>) => {
+    setBookmarkletConfig(prev => ({
+      ...prev,
+      ...newConfig
+    }))
+  }
+
+  const handleBookmarkletGenerateHTML = () => {
+    const generator = BookmarkletGenerator({ config: bookmarkletConfig })
+    const html = generator.generateHTML()
+    setBookmarkletGeneratedHTML(html)
+  }
+
+  const handleBookmarkletCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(bookmarkletGeneratedHTML).then(() => {
+        alert('북마클릿형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
+    }
+  }
+
+  const handleBookmarkletReset = () => {
+    if (typeof window !== 'undefined' && confirm('북마클릿형 설정을 기본값으로 초기화하시겠습니까?')) {
+      setBookmarkletConfig({ ...defaultBookmarkletConfig })
+      setBookmarkletGeneratedHTML('')
+    }
+  }
+
+  // 배너형 핸들러 함수들
+  const handleBannerConfigChange = (newConfig: Partial<typeof defaultBannerConfig>) => {
+    // 이미지 URL 필드에 대한 HTML 파싱 처리
+    if (newConfig.imageUrl && typeof newConfig.imageUrl === 'string') {
+      if (isHtmlImageTag(newConfig.imageUrl)) {
+        newConfig.imageUrl = extractImageUrlFromHtml(newConfig.imageUrl)
+      }
+    }
+    
+    setBannerConfig(prev => ({
+      ...prev,
+      ...newConfig
+    }))
+  }
+
+  const handleBannerGenerateHTML = () => {
+    const generator = BannerGeneratorV2({ config: bannerConfig })
+    const html = generator.generateHTML()
+    setBannerGeneratedHTML(html)
+  }
+
+  const handleBannerCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(bannerGeneratedHTML).then(() => {
+        alert('배너형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
+    }
+  }
+
+  const handleBannerReset = () => {
+    if (typeof window !== 'undefined' && confirm('배너형 설정을 기본값으로 초기화하시겠습니까?')) {
+      setBannerConfig({ ...defaultBannerConfig })
+      setBannerGeneratedHTML('')
+    }
+  }
+
   return (
     <div className="container">
       {/* 로그제조기 타입 선택기 - 모든 상황에서 표시 */}
       <div className="header">
-        <h1>로그제조기 올인원</h1>
-        <p>모든 설정을 한 곳에서 관리하는 스마트 웹로그 생성기</p>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <div>
+            <h1>로그제조기 올인원</h1>
+            <p>모든 설정을 한 곳에서 관리하는 스마트 웹로그 생성기</p>
+          </div>
+          <ModernDarkModeToggle />
+        </div>
         
         <div className="generator-selector">
           <div className="generator-grid">
@@ -803,81 +1111,98 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
           onCopyHTML={handleBingdunCopyHTML}
           onReset={handleBingdunReset}
         />
+      ) : config.selectedGenerator === 'bookmarklet' ? (
+        <BookmarkletFormLayout
+          config={bookmarkletConfig}
+          onConfigChange={handleBookmarkletConfigChange}
+          generatedHTML={bookmarkletGeneratedHTML}
+          onGenerateHTML={handleBookmarkletGenerateHTML}
+          onCopyHTML={handleBookmarkletCopyHTML}
+          onReset={handleBookmarkletReset}
+        />
+      ) : config.selectedGenerator === 'banner' ? (
+        <BannerFormLayout
+          config={bannerConfig}
+          onConfigChange={handleBannerConfigChange}
+          generatedHTML={bannerGeneratedHTML}
+          onGenerateHTML={handleBannerGenerateHTML}
+          onCopyHTML={handleBannerCopyHTML}
+          onReset={handleBannerReset}
+        />
       ) : (
         <div className="main-layout">
           <div className="settings-panel">
             {/* 본문 내용을 최상단으로 이동 */}
-            <div className="settings-section">
-              <h3 className="section-title">📄 본문 내용</h3>
-              <div className="form-group">
-                <textarea
-                  className="form-input form-textarea"
+            <ModernSection title="📄 본문 내용">
+              <ModernFormGroup>
+                <ModernTextarea
                   value={config.content}
-                  onChange={(e) => handleInputChange('content', e.target.value)}
+                  onChange={(value) => handleInputChange('content', value)}
                   placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
                   rows={12}
                 />
-              </div>
+              </ModernFormGroup>
               
               {/* 액션 버튼도 함께 최상단에 배치 */}
               <div className="button-group">
-                <button className="button" onClick={copyToClipboard}>
+                <ModernButton onClick={copyToClipboard}>
                   📋 HTML 복사
-                </button>
-                <button className="button danger" onClick={resetToDefault}>
+                </ModernButton>
+                <ModernButton danger onClick={resetToDefault}>
                   🔄 초기화
-                </button>
+                </ModernButton>
               </div>
-            </div>
+            </ModernSection>
 
             {/* 이미지 설정 */}
-            <div className="settings-section">
-              <h3 className="section-title">🖼️ 이미지 설정</h3>
-              
+            <ModernSection title="🖼️ 이미지 설정">
               {/* 이미지 업로드 */}
-              <div className="form-group">
-                <label className="form-label">📁 이미지 파일 업로드 (실험적 기능)</label>
+              <ModernFormGroup label="📁 이미지 파일 업로드 (실험적 기능)">
                 <input
                   className="form-input"
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
                 />
-                <div className="hint">
+                <ModernHint>
                   ⚠️ 아카라이브 호환성 문제로 실패할 수 있습니다. 권장: 아카라이브에서 직접 업로드
-                </div>
-              </div>
+                </ModernHint>
+              </ModernFormGroup>
 
-              <div className="form-group">
+              <ModernFormGroup>
                 <div className="divider-text">권장 방법</div>
-              </div>
+              </ModernFormGroup>
 
-              <div className="form-group">
-                <label className="form-label">🔗 아카라이브 이미지 URL (권장)</label>
-                <input
-                  className="form-input"
-                  type="text"
+              <ModernFormGroup label="🔗 아카라이브 이미지 URL (권장)">
+                <ModernInput
                   value={config.backgroundImage.startsWith('data:') ? '' : config.backgroundImage}
-                  onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
+                  onChange={(value) => handleInputChange('backgroundImage', value)}
                   onPaste={handlePaste}
                   placeholder="아카라이브 이미지 HTML 또는 URL을 입력하세요"
                 />
-                <div className="hint">
+                <ModernHint>
                   💡 <strong>권장 방법:</strong> <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 글쓰기</a>에서 이미지 업로드 → HTML 코드 복사 → 여기에 붙여넣기
-                </div>
-                <div className="hint">
+                </ModernHint>
+                <ModernHint>
                   📋 아카라이브 이미지 HTML 형식: &lt;img src="//ac-p1.namu.la/..." /&gt;
-                </div>
+                </ModernHint>
+                <ModernHint>
+                  <p><strong>📌 이미지 업로드 방법 (가장 확실한 방법):</strong></p>
+                  <p>1️⃣ <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 게시글 작성 화면</a>으로 이동</p>
+                  <p>2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드</p>
+                  <p>3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사</p>
+                  <p>4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기</p>
+                  <p>5️⃣ URL이 자동으로 추출되어 적용됩니다</p>
+                </ModernHint>
                 {extractedFromHtml && (
-                  <div className="hint success">
+                  <ModernHint type="success">
                     ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
-                  </div>
+                  </ModernHint>
                 )}
-              </div>
+              </ModernFormGroup>
               
               {/* 기본 이미지 선택 */}
-              <div className="form-group">
-                <label className="form-label">🖼️ 기본 이미지</label>
+              <ModernFormGroup label="🖼️ 기본 이미지">
                 <div className="default-images-grid">
                   {defaultImages.map((image) => (
                     <button
@@ -898,240 +1223,157 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
                     </button>
                   ))}
                 </div>
-                <div className="hint">
+                <ModernHint>
                   💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
-                </div>
-              </div>
-            </div>
+                </ModernHint>
+              </ModernFormGroup>
+            </ModernSection>
 
             {/* 텍스트 설정 */}
-            <div className="settings-section">
-              <h3 className="section-title">📝 텍스트 설정</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">왼쪽 텍스트</label>
-                  <input
-                    className="form-input"
-                    type="text"
+            <ModernSection title="📝 텍스트 설정">
+              <ModernFormRow>
+                <ModernFormGroup label="왼쪽 텍스트">
+                  <ModernInput
                     value={config.leftText}
-                    onChange={(e) => handleInputChange('leftText', e.target.value)}
+                    onChange={(value) => handleInputChange('leftText', value)}
                     placeholder="왼쪽 텍스트"
                   />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">오른쪽 텍스트</label>
-                  <input
-                    className="form-input"
-                    type="text"
+                </ModernFormGroup>
+                <ModernFormGroup label="오른쪽 텍스트">
+                  <ModernInput
                     value={config.rightText}
-                    onChange={(e) => handleInputChange('rightText', e.target.value)}
+                    onChange={(value) => handleInputChange('rightText', value)}
                     placeholder="오른쪽 텍스트"
                   />
-                </div>
-              </div>
-            </div>
+                </ModernFormGroup>
+              </ModernFormRow>
+            </ModernSection>
 
             {/* 본문 색상 설정 추가 */}
-            <div className="settings-section">
-              <h3 className="section-title">🎨 본문 색상 설정</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">본문 배경색</label>
-                  <input
-                    className="color-input"
-                    type="color"
+            <ModernSection title="🎨 본문 색상 설정">
+              <ModernFormRow>
+                <ModernFormGroup label="본문 배경색">
+                  <ModernColorPicker
                     value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
-                    onChange={(e) => handleInputChange('contentBackgroundColor', e.target.value)}
+                    onChange={(value) => handleInputChange('contentBackgroundColor', value)}
                   />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">본문 글자색</label>
-                  <input
-                    className="color-input"
-                    type="color"
+                </ModernFormGroup>
+                <ModernFormGroup label="본문 글자색">
+                  <ModernColorPicker
                     value={config.contentTextColor}
-                    onChange={(e) => handleInputChange('contentTextColor', e.target.value)}
+                    onChange={(value) => handleInputChange('contentTextColor', value)}
                   />
-                </div>
-              </div>
-            </div>
+                </ModernFormGroup>
+              </ModernFormRow>
+            </ModernSection>
 
             {/* 색상 설정 */}
-            <div className="settings-section">
-              <h3 className="section-title">🎨 색상 설정</h3>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">왼쪽 박스 색상 1</label>
-                  <input
-                    className="color-input"
-                    type="color"
+            <ModernSection title="🎨 색상 설정">
+              <ModernFormRow>
+                <ModernFormGroup label="왼쪽 박스 색상 1">
+                  <ModernColorPicker
                     value={config.leftTextColor1}
-                    onChange={(e) => handleInputChange('leftTextColor1', e.target.value)}
+                    onChange={(value) => handleInputChange('leftTextColor1', value)}
                   />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">왼쪽 박스 색상 2</label>
-                  <input
-                    className="color-input"
-                    type="color"
+                </ModernFormGroup>
+                <ModernFormGroup label="왼쪽 박스 색상 2">
+                  <ModernColorPicker
                     value={config.leftTextColor2}
-                    onChange={(e) => handleInputChange('leftTextColor2', e.target.value)}
+                    onChange={(value) => handleInputChange('leftTextColor2', value)}
                   />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">큰따옴표 색상 1</label>
-                  <input
-                    className="color-input"
-                    type="color"
+                </ModernFormGroup>
+              </ModernFormRow>
+              <ModernFormRow>
+                <ModernFormGroup label="큰따옴표 색상 1">
+                  <ModernColorPicker
                     value={config.quoteColor1}
-                    onChange={(e) => handleInputChange('quoteColor1', e.target.value)}
+                    onChange={(value) => handleInputChange('quoteColor1', value)}
                   />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">큰따옴표 색상 2</label>
-                  <input
-                    className="color-input"
-                    type="color"
+                </ModernFormGroup>
+                <ModernFormGroup label="큰따옴표 색상 2">
+                  <ModernColorPicker
                     value={config.quoteColor2}
-                    onChange={(e) => handleInputChange('quoteColor2', e.target.value)}
+                    onChange={(value) => handleInputChange('quoteColor2', value)}
                   />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">작은따옴표 색상</label>
-                  <input
-                    className="color-input"
-                    type="color"
+                </ModernFormGroup>
+              </ModernFormRow>
+              <ModernFormRow>
+                <ModernFormGroup label="작은따옴표 색상">
+                  <ModernColorPicker
                     value={config.singleQuoteColor}
-                    onChange={(e) => handleInputChange('singleQuoteColor', e.target.value)}
+                    onChange={(value) => handleInputChange('singleQuoteColor', value)}
                   />
-                </div>
-              </div>
-            </div>
+                </ModernFormGroup>
+              </ModernFormRow>
+            </ModernSection>
 
             {/* 스타일 옵션 */}
-            <div className="settings-section">
-              <h3 className="section-title">✨ 스타일 옵션</h3>
-              <div className="checkbox-group">
-                <input
-                  className="checkbox"
-                  type="checkbox"
-                  id="quoteColor"
-                  checked={config.quoteColorEnabled}
-                  onChange={(e) => handleInputChange('quoteColorEnabled', e.target.checked)}
-                />
-                <label className="checkbox-label" htmlFor="quoteColor">
-                  큰따옴표 색상 활성화
-                </label>
-              </div>
-              <div className="checkbox-group">
-                <input
-                  className="checkbox"
-                  type="checkbox"
-                  id="quoteGradient"
-                  checked={config.quoteGradientEnabled}
-                  onChange={(e) => handleInputChange('quoteGradientEnabled', e.target.checked)}
-                />
-                <label className="checkbox-label" htmlFor="quoteGradient">
-                  큰따옴표 그라데이션 효과
-                </label>
-              </div>
-              <div className="checkbox-group">
-                <input
-                  className="checkbox"
-                  type="checkbox"
-                  id="boldText"
-                  checked={config.boldEnabled}
-                  onChange={(e) => handleInputChange('boldEnabled', e.target.checked)}
-                />
-                <label className="checkbox-label" htmlFor="boldText">
-                  큰따옴표 볼드체
-                </label>
-              </div>
-              <div className="checkbox-group">
-                <input
-                  className="checkbox"
-                  type="checkbox"
-                  id="singleQuoteItalic"
-                  checked={config.singleQuoteItalic}
-                  onChange={(e) => handleInputChange('singleQuoteItalic', e.target.checked)}
-                />
-                <label className="checkbox-label" htmlFor="singleQuoteItalic">
-                  작은따옴표 기울기
-                </label>
-              </div>
-              <div className="checkbox-group">
-                <input
-                  className="checkbox"
-                  type="checkbox"
-                  id="paragraphIndent"
-                  checked={config.paragraphIndent}
-                  onChange={(e) => handleInputChange('paragraphIndent', e.target.checked)}
-                />
-                <label className="checkbox-label" htmlFor="paragraphIndent">
-                  문단 들여쓰기
-                </label>
-              </div>
-            </div>
+            <ModernSection title="✨ 스타일 옵션">
+              <ModernCheckbox
+                checked={config.quoteColorEnabled}
+                onChange={(checked) => handleInputChange('quoteColorEnabled', checked)}
+                label="큰따옴표 색상 활성화"
+              />
+              <ModernCheckbox
+                checked={config.quoteGradientEnabled}
+                onChange={(checked) => handleInputChange('quoteGradientEnabled', checked)}
+                label="큰따옴표 그라데이션 효과"
+              />
+              <ModernCheckbox
+                checked={config.boldEnabled}
+                onChange={(checked) => handleInputChange('boldEnabled', checked)}
+                label="큰따옴표 볼드체"
+              />
+              <ModernCheckbox
+                checked={config.singleQuoteItalic}
+                onChange={(checked) => handleInputChange('singleQuoteItalic', checked)}
+                label="작은따옴표 기울기"
+              />
+              <ModernCheckbox
+                checked={config.paragraphIndent}
+                onChange={(checked) => handleInputChange('paragraphIndent', checked)}
+                label="문단 들여쓰기"
+              />
+            </ModernSection>
 
             {/* 본문 텍스트 조절 */}
-            <div className="settings-section">
-              <h3 className="section-title">📏 본문 텍스트 조절</h3>
-              <div className="slider-group">
-                <label className="form-label">
-                  폰트 크기: <span className="slider-value">{config.fontSize}px</span>
-                </label>
-                <input
-                  className="slider"
-                  type="range"
-                  min="10"
-                  max="24"
-                  value={config.fontSize}
-                  onChange={(e) => handleInputChange('fontSize', parseInt(e.target.value))}
-                />
-              </div>
-              <div className="slider-group">
-                <label className="form-label">
-                  줄 간격: <span className="slider-value">{config.lineHeight}</span>
-                </label>
-                <input
-                  className="slider"
-                  type="range"
-                  min="1.2"
-                  max="2.5"
-                  step="0.1"
-                  value={config.lineHeight}
-                  onChange={(e) => handleInputChange('lineHeight', parseFloat(e.target.value))}
-                />
-              </div>
-            </div>
+            <ModernSection title="📏 본문 텍스트 조절">
+              <ModernSlider
+                value={config.fontSize}
+                onChange={(value) => handleInputChange('fontSize', value)}
+                min={10}
+                max={24}
+                step={1}
+                label="폰트 크기"
+              />
+              <ModernSlider
+                value={config.lineHeight}
+                onChange={(value) => handleInputChange('lineHeight', value)}
+                min={1.2}
+                max={2.5}
+                step={0.1}
+                label="줄 간격"
+              />
+            </ModernSection>
 
             {/* 단어 교환 - 3줄로 확장 */}
-            <div className="settings-section">
-              <h3 className="section-title">🔄 단어 교환</h3>
+            <ModernSection title="🔄 단어 교환">
               {config.wordReplacements.map((replacement, index) => (
                 <div key={index} className="word-replacement">
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="변경할 단어"
+                  <ModernInput
                     value={replacement.from}
-                    onChange={(e) => handleWordReplacementChange(index, 'from', e.target.value)}
+                    onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                    placeholder="변경할 단어"
                   />
                   <span className="arrow">→</span>
-                  <input
-                    className="form-input"
-                    type="text"
-                    placeholder="대체할 단어"
+                  <ModernInput
                     value={replacement.to}
-                    onChange={(e) => handleWordReplacementChange(index, 'to', e.target.value)}
+                    onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                    placeholder="대체할 단어"
                   />
                 </div>
               ))}
-            </div>
+            </ModernSection>
           </div>
 
           <div className="preview-panel">

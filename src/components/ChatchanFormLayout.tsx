@@ -1,4 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+  ModernButton,
+  ModernInput,
+  ModernTextarea,
+  ModernCheckbox,
+  ModernColorPicker,
+  ModernSlider,
+  ModernFormGroup,
+  ModernFormRow,
+  ModernSection,
+  ModernHint,
+  ModernSelect
+} from './ModernComponents';
+import { STYLES } from '@/utils/styles';
 
 interface WordReplacement {
   from: string;
@@ -252,1125 +266,468 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   return (
-    <div className="chatchan-container" style={{ 
-      backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5',
-      color: isDarkMode ? '#e4e6eb' : '#1d2129',
-      transition: 'background-color 0.2s, color 0.2s',
-      minHeight: '100vh',
-      padding: '20px'
-    }}>
-      <div style={{
-        maxWidth: '800px',
-        margin: '20px auto',
-        backgroundColor: isDarkMode ? '#242526' : '#ffffff',
-        border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-        borderRadius: '8px',
-        padding: '25px',
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1)'
-      }}>
-        
-        {/* 헤더 */}
-        <h1 style={{
-          fontSize: '22px',
-          marginTop: 0,
-          marginBottom: '25px',
-          color: isDarkMode ? '#e4e6eb' : '#1d2129',
-          borderBottom: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-          paddingBottom: '15px',
-          fontWeight: 600
-        }}>
-          챗챈 로그 제조기 (V1.3)
-        </h1>
-
-        {/* 테마 토글 섹션 */}
-        <div style={{
-          padding: '15px 20px',
-          marginBottom: '20px',
-          borderBottom: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '10px'
-        }}>
-          <label style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            cursor: 'pointer',
-            marginBottom: 0,
-            fontWeight: 'normal'
-          }}>
-            <input
-              type="checkbox"
-              checked={isDarkMode}
-              onChange={(e) => setIsDarkMode(e.target.checked)}
-              style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-            />
-            <span style={{
-              position: 'relative',
-              display: 'inline-block',
-              width: '50px',
-              height: '26px',
-              backgroundColor: isDarkMode ? '#2374e1' : '#ccc',
-              borderRadius: '13px',
-              transition: 'background-color 0.2s',
-              marginRight: '10px'
-            }}>
-              <span style={{
-                content: '""',
-                position: 'absolute',
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                backgroundColor: 'white',
-                top: '3px',
-                left: '3px',
-                transform: isDarkMode ? 'translateX(24px)' : 'translateX(0)',
-                transition: 'transform 0.2s'
-              }} />
-            </span>
-            <span style={{
-              color: isDarkMode ? '#e4e6eb' : '#4b4f56',
-              marginLeft: '8px',
-              fontSize: '14px'
-            }}>
-              {isDarkMode ? '다크 모드' : '라이트 모드'}
-            </span>
-          </label>
-          <button
-            onClick={onReset}
-            style={{
-              backgroundColor: '#dc3545',
-              color: 'white',
-              padding: '5px 10px',
-              fontSize: '12px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            전체 초기화
-          </button>
-        </div>
-
-        {/* 캐릭터 정보 설정 */}
-        <details style={{
-          border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-          borderRadius: '8px',
-          marginBottom: '20px',
-          backgroundColor: isDarkMode ? '#242526' : '#ffffff',
-          overflow: 'hidden'
-        }} open>
-          <summary style={{
-            fontWeight: 600,
-            cursor: 'pointer',
-            padding: '15px 20px',
-            color: isDarkMode ? '#e4e6eb' : '#1d2129',
-            listStyle: 'none',
-            borderBottom: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`
-          }}>
-            캐릭터 정보 설정
-          </summary>
-          <div style={{ padding: '20px' }}>
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  캐릭터 이름
-                </label>
-                <input
-                  type="text"
-                  value={config.characterName}
-                  onChange={(e) => onConfigChange({ characterName: e.target.value })}
-                  placeholder="캐릭터 이름"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  AI 모델명
-                </label>
-                <input
-                  type="text"
-                  value={config.modelName}
-                  onChange={(e) => onConfigChange({ modelName: e.target.value })}
-                  placeholder="모델명 선택 또는 직접 입력"
-                  list="modelNameList"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-                <datalist id="modelNameList">
-                  <option value="GPT-4o ChatGPT" />
-                  <option value="GPT-4.5" />
-                  <option value="Claude 3.7 Sonnet" />
-                  <option value="Gemini pro 2.5" />
-                  <option value="Gemini flash 2.0" />
-                </datalist>
-              </div>
-            </div>
-            {/* 나머지 입력 필드들도 동일한 패턴으로 구현 */}
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  프롬프트명
-                </label>
-                <input
-                  type="text"
-                  value={config.promptName}
-                  onChange={(e) => onConfigChange({ promptName: e.target.value })}
-                  placeholder="프롬프트명"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  보조 모델명
-                </label>
-                <input
-                  type="text"
-                  value={config.assistModelName}
-                  onChange={(e) => onConfigChange({ assistModelName: e.target.value })}
-                  placeholder="보조 모델명 선택 또는 직접 입력"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  유저 이름
-                </label>
-                <input
-                  type="text"
-                  value={config.userName}
-                  onChange={(e) => onConfigChange({ userName: e.target.value })}
-                  placeholder="유저 이름 (기본값: USER)"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  채팅 번호
-                </label>
-                <input
-                  type="text"
-                  value={config.chatNumber}
-                  onChange={(e) => onConfigChange({ chatNumber: e.target.value })}
-                  placeholder="채팅 번호 (기본값: 랜덤)"
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </div>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                캐릭터 이미지 URL (선택)
-              </label>
-              <input
-                type="text"
-                value={config.characterImageUrl}
-                onChange={(e) => onConfigChange({ characterImageUrl: e.target.value })}
-                placeholder="https://example.com/image.png"
-                disabled={!config.useCharacterImage}
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  borderRadius: '4px',
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                  fontSize: '14px',
-                  opacity: config.useCharacterImage ? 1 : 0.5
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
-              <label style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                cursor: 'pointer',
-                marginBottom: 0,
-                fontWeight: 'normal'
-              }}>
-                <input
-                  type="checkbox"
-                  checked={!config.useCharacterImage}
-                  onChange={(e) => onConfigChange({ useCharacterImage: !e.target.checked })}
-                  style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-                />
-                <span style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  width: '40px',
-                  height: '22px',
-                  backgroundColor: !config.useCharacterImage ? '#2374e1' : '#ccc',
-                  borderRadius: '11px',
-                  transition: 'background-color 0.2s',
-                  marginRight: '10px'
-                }}>
-                  <span style={{
-                    content: '""',
-                    position: 'absolute',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    backgroundColor: 'white',
-                    top: '3px',
-                    left: '3px',
-                    transform: !config.useCharacterImage ? 'translateX(18px)' : 'translateX(0)',
-                    transition: 'transform 0.2s'
-                  }} />
-                </span>
-                <span style={{ color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                  캐릭터 이미지 사용 안 함
-                </span>
-              </label>
-            </div>
+    <div className="container">
+      <div className="main-layout">
+        <div className="settings-panel">
+          {/* 헤더 */}
+          <div className="header">
+            <h1>챗챈 로그 제조기 (V1.3)</h1>
+            <p>모던한 챗챈 스타일 로그 생성기</p>
           </div>
-        </details>
 
-        {/* 디자인 및 스타일 설정 */}
-        <details style={{
-          border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-          borderRadius: '8px',
-          marginBottom: '20px',
-          backgroundColor: isDarkMode ? '#242526' : '#ffffff',
-          overflow: 'hidden'
-        }}>
-          <summary style={{
-            fontWeight: 600,
-            cursor: 'pointer',
-            padding: '15px 20px',
-            color: isDarkMode ? '#e4e6eb' : '#1d2129',
-            listStyle: 'none'
-          }}>
-            디자인 및 스타일 설정
-          </summary>
-          <div style={{ padding: '20px' }}>
+          {/* 테마 토글 섹션 */}
+          <ModernSection title="🎨 테마 설정">
+            <ModernFormRow>
+              <ModernFormGroup>
+                <ModernCheckbox
+                  checked={isDarkMode}
+                  onChange={setIsDarkMode}
+                  label={isDarkMode ? '다크 모드' : '라이트 모드'}
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernButton danger onClick={onReset}>
+                  전체 초기화
+                </ModernButton>
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
+
+          {/* 캐릭터 정보 설정 */}
+          <ModernSection title="👤 캐릭터 정보 설정">
+            <ModernFormRow>
+              <ModernFormGroup label="캐릭터 이름">
+                <ModernInput
+                  value={config.characterName}
+                  onChange={(value) => onConfigChange({ characterName: value })}
+                  placeholder="캐릭터 이름"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="AI 모델명">
+                <ModernInput
+                  value={config.modelName}
+                  onChange={(value) => onConfigChange({ modelName: value })}
+                  placeholder="모델명 선택 또는 직접 입력"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="프롬프트명">
+                <ModernInput
+                  value={config.promptName}
+                  onChange={(value) => onConfigChange({ promptName: value })}
+                  placeholder="프롬프트명"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="보조 모델명">
+                <ModernInput
+                  value={config.assistModelName}
+                  onChange={(value) => onConfigChange({ assistModelName: value })}
+                  placeholder="보조 모델명"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="사용자 이름">
+                <ModernInput
+                  value={config.userName}
+                  onChange={(value) => onConfigChange({ userName: value })}
+                  placeholder="사용자 이름"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="채팅 번호">
+                <ModernInput
+                  value={config.chatNumber}
+                  onChange={(value) => onConfigChange({ chatNumber: value })}
+                  placeholder="채팅 번호"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormGroup label="캐릭터 이미지 URL">
+              <ModernInput
+                value={config.characterImageUrl}
+                onChange={(value) => onConfigChange({ characterImageUrl: value })}
+                placeholder="캐릭터 이미지 URL"
+              />
+              <ModernCheckbox
+                checked={config.useCharacterImage}
+                onChange={(checked) => onConfigChange({ useCharacterImage: checked })}
+                label="캐릭터 이미지 사용"
+              />
+            </ModernFormGroup>
+          </ModernSection>
+
+          {/* 디자인 및 스타일 설정 */}
+          <ModernSection title="🎨 디자인 및 스타일 설정">
             {/* 컬러 테마 버튼들 */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                컬러 테마
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {Object.entries(colorThemes).map(([key, theme]) => (
-                  <button
-                    key={key}
-                    onClick={() => applyColorTheme(key)}
-                    style={{
-                      padding: '8px 12px',
-                      border: 'none',
-                      borderRadius: '4px',
-                      backgroundColor: theme.h,
-                      color: 'white',
-                      fontWeight: 600,
-                      minWidth: '70px',
-                      textAlign: 'center',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {key.split('_')[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ModernFormRow>
+              <ModernFormGroup>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
+                  컬러 테마
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {Object.entries(colorThemes).map(([key, theme]) => (
+                    <ModernButton
+                      key={key}
+                      onClick={() => applyColorTheme(key)}
+                      style={{
+                        backgroundColor: theme.h,
+                        color: 'white',
+                        minWidth: '70px'
+                      }}
+                    >
+                      {key.split('_')[0]}
+                    </ModernButton>
+                  ))}
+                </div>
+              </ModernFormGroup>
+            </ModernFormRow>
             
             {/* 색상 설정 */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                스타일 상세 설정
-              </label>
-              <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    로그 배경 색상
-                  </label>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={config.backgroundColor}
-                      onChange={(e) => onConfigChange({ backgroundColor: e.target.value })}
-                      style={{
-                        width: '40px',
-                        height: '38px',
-                        padding: '2px',
-                        cursor: 'pointer',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={config.backgroundColor}
-                      onChange={(e) => onConfigChange({ backgroundColor: e.target.value })}
-                      style={{
-                        flex: 1,
-                        padding: '9px 12px',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                        color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div style={{ flex: '1 1 200px', minWidth: '150px' }}>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    로그 글자 색상
-                  </label>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={config.textColor}
-                      onChange={(e) => onConfigChange({ textColor: e.target.value })}
-                      style={{
-                        width: '40px',
-                        height: '38px',
-                        padding: '2px',
-                        cursor: 'pointer',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={config.textColor}
-                      onChange={(e) => onConfigChange({ textColor: e.target.value })}
-                      style={{
-                        flex: 1,
-                        padding: '9px 12px',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                        color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              {/* 하이라이트 색상들 */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    하이라이트 색상 1
-                  </label>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={config.highlightColor}
-                      onChange={(e) => onConfigChange({ highlightColor: e.target.value })}
-                      style={{
-                        width: '40px',
-                        height: '38px',
-                        padding: '2px',
-                        cursor: 'pointer',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={config.highlightColor}
-                      onChange={(e) => onConfigChange({ highlightColor: e.target.value })}
-                      style={{
-                        flex: 1,
-                        padding: '9px 12px',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                        color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    하이라이트 색상 2
-                  </label>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={config.promptColor}
-                      onChange={(e) => onConfigChange({ promptColor: e.target.value })}
-                      style={{
-                        width: '40px',
-                        height: '38px',
-                        padding: '2px',
-                        cursor: 'pointer',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={config.promptColor}
-                      onChange={(e) => onConfigChange({ promptColor: e.target.value })}
-                      style={{
-                        flex: 1,
-                        padding: '9px 12px',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                        color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    하이라이트 색상 3
-                  </label>
-                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                    <input
-                      type="color"
-                      value={config.emphasisColor}
-                      onChange={(e) => onConfigChange({ emphasisColor: e.target.value })}
-                      style={{
-                        width: '40px',
-                        height: '38px',
-                        padding: '2px',
-                        cursor: 'pointer',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px'
-                      }}
-                    />
-                    <input
-                      type="text"
-                      value={config.emphasisColor}
-                      onChange={(e) => onConfigChange({ emphasisColor: e.target.value })}
-                      style={{
-                        flex: 1,
-                        padding: '9px 12px',
-                        border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                        borderRadius: '4px',
-                        backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                        color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 크기 설정 */}
-            <div style={{ display: 'flex', gap: '15px', marginTop: '15px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 150px', minWidth: '120px' }}>
-                <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                  글자 크기 (px)
-                </label>
-                <input
-                  type="number"
-                  value={config.baseFontSize}
-                  onChange={(e) => onConfigChange({ baseFontSize: parseInt(e.target.value) || 15 })}
-                  min="10"
-                  max="30"
-                  step="1"
-                  style={{
-                    width: '80px',
-                    padding: '9px',
-                    textAlign: 'right',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div style={{ flex: '1 1 150px', minWidth: '120px' }}>
-                <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                  제목 글자 크기 (px)
-                </label>
-                <input
-                  type="number"
-                  value={config.titleFontSize}
-                  onChange={(e) => onConfigChange({ titleFontSize: parseInt(e.target.value) || 38 })}
-                  min="20"
-                  max="60"
-                  step="1"
-                  style={{
-                    width: '80px',
-                    padding: '9px',
-                    textAlign: 'right',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-              <div style={{ flex: '1 1 150px', minWidth: '120px' }}>
-                <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                  컨테이너 너비 (px)
-                </label>
-                <input
-                  type="number"
-                  value={config.containerWidth}
-                  onChange={(e) => onConfigChange({ containerWidth: parseInt(e.target.value) || 650 })}
-                  min="300"
-                  max="1500"
-                  step="10"
-                  style={{
-                    width: '80px',
-                    padding: '9px',
-                    textAlign: 'right',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 추가 옵션들 */}
-            <div style={{
-              border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-              borderRadius: '4px',
-              padding: '15px',
-              marginTop: '15px',
-              backgroundColor: isDarkMode ? '#3a3b3c' : '#f0f2f5'
-            }}>
-              <label style={{ fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56', marginBottom: '10px', display: 'block' }}>
-                추가 스타일 및 출력 옵션
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 15px', marginTop: '10px' }}>
-                {[
-                  { key: 'italicizeNarration', label: '나레이션 기울임꼴', checked: config.italicizeNarration },
-                  { key: 'simpleOutputMode', label: '채팅 로그만 출력', checked: config.simpleOutputMode },
-                  { key: 'disableChatLogCollapse', label: '로그 접기 비활성화', checked: config.disableChatLogCollapse },
-                  { key: 'isAutoInputMode', label: '딸깍 모드', checked: config.isAutoInputMode },
-                  { key: 'dialogueUseBubble', label: '대사에 말풍선 사용', checked: config.dialogueUseBubble },
-                  { key: 'narrationUseLine', label: '나레이션에 인용선 사용', checked: config.narrationUseLine },
-                  { key: 'showBriefHeaderInfo', label: '모델 정보 헤더에 표시', checked: config.showBriefHeaderInfo }
-                ].map((option) => (
-                  <div key={option.key} style={{ display: 'flex', alignItems: 'center', marginBottom: 0 }}>
-                    <label style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      marginBottom: 0,
-                      fontWeight: 'normal'
-                    }}>
-                      <input
-                        type="checkbox"
-                        checked={option.checked}
-                        onChange={(e) => onConfigChange({ [option.key]: e.target.checked })}
-                        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
-                      />
-                      <span style={{
-                        position: 'relative',
-                        display: 'inline-block',
-                        width: '40px',
-                        height: '22px',
-                        backgroundColor: option.checked ? '#2374e1' : '#ccc',
-                        borderRadius: '11px',
-                        transition: 'background-color 0.2s',
-                        marginRight: '10px'
-                      }}>
-                        <span style={{
-                          content: '""',
-                          position: 'absolute',
-                          width: '16px',
-                          height: '16px',
-                          borderRadius: '50%',
-                          backgroundColor: 'white',
-                          top: '3px',
-                          left: '3px',
-                          transform: option.checked ? 'translateX(18px)' : 'translateX(0)',
-                          transition: 'transform 0.2s'
-                        }} />
-                      </span>
-                      <span style={{ color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                        {option.label}
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 프리셋 관리 */}
-            <div style={{
-              marginTop: '20px',
-              paddingTop: '20px',
-              borderTop: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`
-            }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-                설정 프리셋 관리
-              </label>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '10px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', marginBottom: '4px', fontWeight: 'normal', display: 'block' }}>
-                    프리셋 이름
-                  </label>
-                  <input
-                    type="text"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                    placeholder="저장할 프리셋 이름 입력"
-                    style={{
-                      width: '100%',
-                      padding: '9px 12px',
-                      border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                      borderRadius: '4px',
-                      backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                      color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                      fontSize: '14px',
-                      minWidth: '150px'
-                    }}
+            <ModernFormRow>
+              <ModernFormGroup label="로그 배경 색상">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ModernColorPicker
+                    value={config.backgroundColor}
+                    onChange={(color) => onConfigChange({ backgroundColor: color })}
+                  />
+                  <ModernInput
+                    value={config.backgroundColor}
+                    onChange={(value) => onConfigChange({ backgroundColor: value })}
+                    placeholder="#ffffff"
                   />
                 </div>
-                <button
-                  onClick={savePreset}
-                  style={{
-                    backgroundColor: '#17a2b8',
-                    color: 'white',
-                    padding: '10px 15px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    flexShrink: 0
-                  }}
-                >
-                  프리셋 저장
-                </button>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '10px', flexWrap: 'wrap' }}>
-                <select
-                  value={selectedPreset}
-                  onChange={(e) => setSelectedPreset(e.target.value)}
-                  style={{
-                    flex: 2,
-                    padding: '9px 12px',
-                    border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                    borderRadius: '4px',
-                    backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                    color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                    fontSize: '14px'
-                  }}
-                >
-                  <option value="">-- 프리셋 선택 --</option>
-                  {Object.keys(presets).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={loadPreset}
-                  style={{
-                    backgroundColor: isDarkMode ? '#4e4f50' : '#6c757d',
-                    color: 'white',
-                    padding: '10px 15px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    flexShrink: 0
-                  }}
-                >
-                  불러오기
-                </button>
-                <button
-                  onClick={deletePreset}
-                  style={{
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    padding: '5px 10px',
-                    fontSize: '12px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    flexShrink: 0
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          </div>
-        </details>
+              </ModernFormGroup>
+              <ModernFormGroup label="로그 글자 색상">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ModernColorPicker
+                    value={config.textColor}
+                    onChange={(color) => onConfigChange({ textColor: color })}
+                  />
+                  <ModernInput
+                    value={config.textColor}
+                    onChange={(value) => onConfigChange({ textColor: value })}
+                    placeholder="#000000"
+                  />
+                </div>
+              </ModernFormGroup>
+            </ModernFormRow>
+            
+            {/* 하이라이트 색상들 */}
+            <ModernFormRow>
+              <ModernFormGroup label="하이라이트 색상 1">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ModernColorPicker
+                    value={config.highlightColor}
+                    onChange={(color) => onConfigChange({ highlightColor: color })}
+                  />
+                  <ModernInput
+                    value={config.highlightColor}
+                    onChange={(value) => onConfigChange({ highlightColor: value })}
+                    placeholder="#2980b9"
+                  />
+                </div>
+              </ModernFormGroup>
+              <ModernFormGroup label="하이라이트 색상 2">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ModernColorPicker
+                    value={config.promptColor}
+                    onChange={(color) => onConfigChange({ promptColor: color })}
+                  />
+                  <ModernInput
+                    value={config.promptColor}
+                    onChange={(value) => onConfigChange({ promptColor: value })}
+                    placeholder="#5dade2"
+                  />
+                </div>
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="하이라이트 색상 3">
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <ModernColorPicker
+                    value={config.emphasisColor}
+                    onChange={(color) => onConfigChange({ emphasisColor: color })}
+                  />
+                  <ModernInput
+                    value={config.emphasisColor}
+                    onChange={(value) => onConfigChange({ emphasisColor: value })}
+                    placeholder="#1a5276"
+                  />
+                </div>
+              </ModernFormGroup>
+            </ModernFormRow>
 
-        {/* 채팅 내용 입력 */}
-        <details style={{
-          border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-          borderRadius: '8px',
-          marginBottom: '20px',
-          backgroundColor: isDarkMode ? '#242526' : '#ffffff',
-          overflow: 'hidden'
-        }} open>
-          <summary style={{
-            fontWeight: 600,
-            cursor: 'pointer',
-            padding: '15px 20px',
-            color: isDarkMode ? '#e4e6eb' : '#1d2129',
-            listStyle: 'none',
-            borderBottom: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`
-          }}>
-            채팅 내용 입력
-          </summary>
-          <div style={{ padding: '20px' }}>
+            {/* 크기 설정 */}
+            <ModernFormRow>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.baseFontSize}
+                  onChange={(value) => onConfigChange({ baseFontSize: value })}
+                  min={10}
+                  max={30}
+                  step={1}
+                  label="글자 크기 (px)"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.titleFontSize}
+                  onChange={(value) => onConfigChange({ titleFontSize: value })}
+                  min={20}
+                  max={60}
+                  step={1}
+                  label="제목 글자 크기 (px)"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.containerWidth}
+                  onChange={(value) => onConfigChange({ containerWidth: value })}
+                  min={300}
+                  max={1500}
+                  step={10}
+                  label="컨테이너 너비 (px)"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.logSectionRadius}
+                  onChange={(value) => onConfigChange({ logSectionRadius: value })}
+                  min={0}
+                  max={30}
+                  step={1}
+                  label="로그 섹션 둥근 모서리 (px)"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.lineHeight}
+                  onChange={(value) => onConfigChange({ lineHeight: value })}
+                  min={1.0}
+                  max={3.0}
+                  step={0.1}
+                  label="줄 간격"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernSlider
+                  value={config.letterSpacing}
+                  onChange={(value) => onConfigChange({ letterSpacing: value })}
+                  min={-2}
+                  max={5}
+                  step={0.1}
+                  label="글자 간격 (px)"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+
+            {/* 추가 스타일 및 출력 옵션 */}
+            <ModernFormGroup label="추가 스타일 및 출력 옵션">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <ModernCheckbox
+                  checked={config.italicizeNarration}
+                  onChange={(checked) => onConfigChange({ italicizeNarration: checked })}
+                  label="나레이션 기울임꼴"
+                />
+                <ModernCheckbox
+                  checked={config.simpleOutputMode}
+                  onChange={(checked) => onConfigChange({ simpleOutputMode: checked })}
+                  label="채팅 로그만 출력"
+                />
+                <ModernCheckbox
+                  checked={config.disableChatLogCollapse}
+                  onChange={(checked) => onConfigChange({ disableChatLogCollapse: checked })}
+                  label="로그 접기 비활성화"
+                />
+                <ModernCheckbox
+                  checked={config.isAutoInputMode}
+                  onChange={(checked) => onConfigChange({ isAutoInputMode: checked })}
+                  label="딸깍 모드"
+                />
+                <ModernCheckbox
+                  checked={config.dialogueUseBubble}
+                  onChange={(checked) => onConfigChange({ dialogueUseBubble: checked })}
+                  label="대사에 말풍선 사용"
+                />
+                <ModernCheckbox
+                  checked={config.narrationUseLine}
+                  onChange={(checked) => onConfigChange({ narrationUseLine: checked })}
+                  label="나레이션에 인용선 사용"
+                />
+                <ModernCheckbox
+                  checked={config.showBriefHeaderInfo}
+                  onChange={(checked) => onConfigChange({ showBriefHeaderInfo: checked })}
+                  label="모델 정보 헤더에 표시"
+                />
+              </div>
+            </ModernFormGroup>
+          </ModernSection>
+
+          {/* 프리셋 관리 */}
+          <ModernSection title="💾 설정 프리셋 관리">
+            <ModernFormRow>
+              <ModernFormGroup label="프리셋 이름">
+                <ModernInput
+                  value={presetName}
+                  onChange={setPresetName}
+                  placeholder="저장할 프리셋 이름 입력"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernButton primary onClick={savePreset}>
+                  프리셋 저장
+                </ModernButton>
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="저장된 프리셋">
+                <ModernSelect
+                  value={selectedPreset}
+                  onChange={setSelectedPreset}
+                  options={[
+                    { value: '', label: '-- 프리셋 선택 --' },
+                    ...Object.keys(presets).map(name => ({ value: name, label: name }))
+                  ]}
+                />
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <ModernButton onClick={loadPreset}>
+                    불러오기
+                  </ModernButton>
+                  <ModernButton danger onClick={deletePreset}>
+                    삭제
+                  </ModernButton>
+                </div>
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
+
+          {/* 채팅 내용 입력 */}
+          <ModernSection title="💬 채팅 내용 입력">
             {/* 입력 형식 안내 */}
-            <div style={{
-              marginBottom: '15px',
-              padding: '15px',
-              backgroundColor: isDarkMode ? '#3a3b3c' : '#f0f2f5',
-              borderRadius: '8px',
-              border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`
-            }}>
-              <strong style={{ color: isDarkMode ? '#e4e6eb' : '#1d2129', fontWeight: 600, marginBottom: '8px', display: 'block' }}>
-                입력 형식 안내 ({config.isAutoInputMode ? '사칭방지용' : '풀사칭용'})
-              </strong>
+            <ModernHint>
+              <strong>입력 형식 안내 ({config.isAutoInputMode ? '사칭방지용' : '풀사칭용'})</strong>
               {config.isAutoInputMode ? (
-                <span style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', lineHeight: 1.7, display: 'block' }}>
-                  - 대사: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>"큰따옴표"</code> 또는 <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>"둥근따옴표"</code> 로 감싸기<br />
+                <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                  - 대사: <code>"큰따옴표"</code> 또는 <code>"둥근따옴표"</code> 로 감싸기<br />
                   - 나레이션: 따옴표 없이 입력<br />
-                  - 예: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>"안녕?"</code><br />
-                  - 예: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>USER가 인사했다.</code>
-                </span>
+                  - 예: <code>"안녕?"</code><br />
+                  - 예: <code>USER가 인사했다.</code>
+                </div>
               ) : (
-                <span style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', lineHeight: 1.7, display: 'block' }}>
-                  - 나레이션: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>-</code> 또는 <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>*</code> 로 시작<br />
-                  - 대화: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>USER:</code> 또는 <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>AI:</code> 로 시작<br />
-                  - 예: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>- 조용한 밤.</code><br />
-                  - 예: <code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>USER: 안녕?</code>
-                </span>
+                <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                  - 나레이션: <code>-</code> 또는 <code>*</code> 로 시작<br />
+                  - 대화: <code>USER:</code> 또는 <code>AI:</code> 로 시작<br />
+                  - 예: <code>- 조용한 밤.</code><br />
+                  - 예: <code>USER: 안녕?</code>
+                </div>
               )}
-              <span style={{ fontSize: '13px', color: isDarkMode ? '#b0b3b8' : '#606770', lineHeight: 1.7, display: 'block', marginTop: '8px' }}>
+              <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
                 - 빈 줄은 무시됩니다.<br />
                 <strong>마크다운 강조:</strong> (툴바 또는 단축키 사용)<br />
-                &nbsp;&nbsp;<code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>**굵게**</code> → <strong>굵은 글씨</strong><br />
-                &nbsp;&nbsp;<code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>*기울임*</code> → <em style={{ fontStyle: 'italic' }}>이탤릭체</em><br />
-                &nbsp;&nbsp;<code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>^하이라이트^</code> → <span style={{ backgroundColor: config.highlightColor, color: '#ffffff', padding: '0 2px', borderRadius: '3px' }}>하이라이트</span><br />
-                &nbsp;&nbsp;<code style={{ backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff', padding: '2px 5px', borderRadius: '3px', fontFamily: 'monospace', fontSize: '12px', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}` }}>$강조$</code> → <span style={{ backgroundColor: config.emphasisColor, color: '#ffffff', padding: '0 2px', borderRadius: '3px' }}>강조</span>
-              </span>
-            </div>
+                &nbsp;&nbsp;<code>**굵게**</code> → <strong>굵은 글씨</strong><br />
+                &nbsp;&nbsp;<code>*기울임*</code> → <em style={{ fontStyle: 'italic' }}>이탤릭체</em><br />
+                &nbsp;&nbsp;<code>^하이라이트^</code> → <span style={{ backgroundColor: config.highlightColor, color: '#ffffff', padding: '0 2px', borderRadius: '3px' }}>하이라이트</span><br />
+                &nbsp;&nbsp;<code>$강조$</code> → <span style={{ backgroundColor: config.emphasisColor, color: '#ffffff', padding: '0 2px', borderRadius: '3px' }}>강조</span>
+              </div>
+            </ModernHint>
 
             {/* 마크다운 툴바 */}
-            <div style={{
-              marginBottom: '8px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '5px',
-              padding: '8px',
-              backgroundColor: isDarkMode ? '#3a3b3c' : '#f0f2f5',
-              border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-              borderRadius: '4px'
-            }}>
-              <button
-                type="button"
-                onClick={() => applyPrefix(textareaRef, '- ')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                나레이션<kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+Alt+1</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyPrefix(textareaRef, 'AI: ')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                AI<kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+Alt+2</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyPrefix(textareaRef, 'USER: ')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                USER<kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+Alt+3</kbd>
-              </button>
-              <span style={{ borderLeft: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, margin: '0 5px' }}></span>
-              <button
-                type="button"
-                onClick={() => applyMarkdown(textareaRef, 'bold')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                <b>B</b><kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+B</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyMarkdown(textareaRef, 'italic')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                <i>I</i><kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+I</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyMarkdown(textareaRef, 'boldItalic')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                <b><i>BI</i></b>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyMarkdown(textareaRef, 'highlight')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                하이라이트<kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+H</kbd>
-              </button>
-              <button
-                type="button"
-                onClick={() => applyMarkdown(textareaRef, 'emphasis')}
-                style={{
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                  padding: '4px 10px',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  fontWeight: 'normal',
-                  color: isDarkMode ? '#e4e6eb' : '#1d2129'
-                }}
-              >
-                강조<kbd style={{ fontSize: '10px', backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5', border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`, padding: '1px 3px', borderRadius: '2px', marginLeft: '4px', verticalAlign: 'middle', color: isDarkMode ? '#b0b3b8' : '#606770' }}>Ctrl+E</kbd>
-              </button>
-            </div>
+            <ModernFormGroup label="마크다운 툴바">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', backgroundColor: 'var(--surface)', borderRadius: '8px' }}>
+                <ModernButton onClick={() => applyPrefix(textareaRef, '- ')}>
+                  나레이션 <kbd>Ctrl+Alt+1</kbd>
+                </ModernButton>
+                <ModernButton onClick={() => applyPrefix(textareaRef, 'AI: ')}>
+                  AI <kbd>Ctrl+Alt+2</kbd>
+                </ModernButton>
+                <ModernButton onClick={() => applyPrefix(textareaRef, 'USER: ')}>
+                  USER <kbd>Ctrl+Alt+3</kbd>
+                </ModernButton>
+                <div style={{ borderLeft: '1px solid var(--border)', margin: '0 8px' }}></div>
+                <ModernButton onClick={() => applyMarkdown(textareaRef, 'bold')}>
+                  <b>B</b> <kbd>Ctrl+B</kbd>
+                </ModernButton>
+                <ModernButton onClick={() => applyMarkdown(textareaRef, 'italic')}>
+                  <i>I</i> <kbd>Ctrl+I</kbd>
+                </ModernButton>
+                <ModernButton onClick={() => applyMarkdown(textareaRef, 'boldItalic')}>
+                  <b><i>BI</i></b>
+                </ModernButton>
+                <ModernButton onClick={() => applyMarkdown(textareaRef, 'highlight')}>
+                  하이라이트 <kbd>Ctrl+H</kbd>
+                </ModernButton>
+                <ModernButton onClick={() => applyMarkdown(textareaRef, 'emphasis')}>
+                  강조 <kbd>Ctrl+E</kbd>
+                </ModernButton>
+              </div>
+            </ModernFormGroup>
 
             {/* 텍스트에어리어 */}
-            <textarea
-              ref={textareaRef}
-              value={config.content}
-              onChange={(e) => {
-                onConfigChange({ content: e.target.value });
-                updateChatSection(0, e.target.value);
-              }}
-              placeholder="- 화창한 봄날, 공원에서 우연히 만난 두 사람은..."
-              style={{
-                width: '100%',
-                minHeight: '150px',
-                padding: '9px 12px',
-                border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-                borderRadius: '4px',
-                backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                color: isDarkMode ? '#e4e6eb' : '#1d2129',
-                fontSize: '14px',
-                fontFamily: 'monospace',
-                resize: 'vertical',
-                lineHeight: 1.5
-              }}
-            />
+            <ModernFormGroup label="채팅 내용">
+              <ModernTextarea
+                value={config.content}
+                onChange={(value) => {
+                  onConfigChange({ content: value });
+                  updateChatSection(0, value);
+                }}
+                placeholder="- 화창한 봄날, 공원에서 우연히 만난 두 사람은..."
+                rows={8}
+              />
+            </ModernFormGroup>
+          </ModernSection>
+
+          {/* 액션 버튼들 */}
+          <ModernSection title="🚀 액션">
+            <ModernFormRow>
+              <ModernFormGroup>
+                <ModernButton primary onClick={onGenerateHTML}>
+                  HTML 생성하기
+                </ModernButton>
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernButton onClick={loadExample}>
+                  예제 불러오기
+                </ModernButton>
+              </ModernFormGroup>
+              <ModernFormGroup>
+                <ModernButton onClick={onCopyHTML}>
+                  HTML 복사하기
+                </ModernButton>
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
+
+          {/* HTML 결과 */}
+          <ModernSection title="📄 HTML 결과">
+            <ModernFormGroup>
+              <ModernTextarea
+                value={generatedHTML}
+                onChange={() => {}} // 읽기 전용
+                placeholder="HTML 생성 버튼을 눌러주세요..."
+                rows={12}
+                disabled
+              />
+            </ModernFormGroup>
+          </ModernSection>
+        </div>
+
+        {/* 미리보기 패널 */}
+        <div className="preview-panel">
+          <div className="preview-header">
+            <h2 className="preview-title">미리보기</h2>
           </div>
-        </details>
-
-        {/* 액션 버튼들 */}
-        <div style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'stretch' }}>
-          <button
-            onClick={onGenerateHTML}
-            style={{
-              backgroundColor: '#007bff',
-              color: 'white',
-              padding: '10px 18px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px'
-            }}
-          >
-            HTML 생성하기
-          </button>
-          <button
-            onClick={loadExample}
-            style={{
-              backgroundColor: '#17a2b8',
-              color: 'white',
-              padding: '10px 15px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px'
-            }}
-          >
-            예제 불러오기
-          </button>
-          <button
-            onClick={onCopyHTML}
-            style={{
-              backgroundColor: isDarkMode ? '#4e4f50' : '#6c757d',
-              color: 'white',
-              padding: '10px 15px',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px'
-            }}
-          >
-            HTML 복사하기
-          </button>
-        </div>
-
-        {/* HTML 결과 */}
-        <div style={{ marginTop: '20px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: isDarkMode ? '#e4e6eb' : '#4b4f56' }}>
-            HTML 결과
-          </label>
-          <textarea
-            value={generatedHTML}
-            readOnly
-            style={{
-              width: '100%',
-              height: '250px',
-              padding: '9px 12px',
-              border: `1px solid ${isDarkMode ? '#4e4f50' : '#ccd0d5'}`,
-              borderRadius: '4px',
-              backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-              color: isDarkMode ? '#e4e6eb' : '#1d2129',
-              fontSize: '13px',
-              fontFamily: 'monospace',
-              whiteSpace: 'pre-wrap',
-              overflowX: 'auto',
-              wordWrap: 'break-word'
-            }}
-          />
-        </div>
-
-        {/* 미리보기 */}
-        <div style={{ marginTop: '20px' }}>
-          <h2 style={{
-            fontSize: '18px',
-            marginBottom: '15px',
-            marginTop: '30px',
-            paddingBottom: '10px',
-            borderBottom: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-            fontWeight: 600,
-            color: isDarkMode ? '#e4e6eb' : '#1d2129'
-          }}>
-            미리보기
-          </h2>
-          <div style={{
-            border: `1px solid ${isDarkMode ? '#3e4042' : '#e4e6eb'}`,
-            padding: '20px',
-            minHeight: '300px',
-            borderRadius: '8px',
-            backgroundColor: isDarkMode ? '#18191a' : '#f0f2f5',
-            marginTop: '15px',
-            overflowX: 'auto'
-          }}>
+          <div className="preview-container">
             {generatedHTML ? (
               <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
             ) : (
-              <div style={{ color: isDarkMode ? '#b0b3b8' : '#606770', textAlign: 'center', padding: '50px 20px' }}>
+              <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '50px 20px' }}>
                 미리보기 영역입니다. 'HTML 생성하기' 버튼을 눌러주세요.
               </div>
             )}
