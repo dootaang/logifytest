@@ -375,8 +375,9 @@ export const useChatchanGeneratorV2 = (config: ChatchanConfig) => {
   };
 
   const generateHTML = useMemo(() => {
-    const chatTexts = config.content ? [config.content] : [''];
-    return formatChatToHTML(chatTexts, config);
+    // content가 여러 섹션으로 나뉘어 있을 수 있으므로 \n\n으로 분할
+    const chatTexts = config.content ? config.content.split('\n\n').filter(text => text.trim()) : [''];
+    return formatChatToHTML(chatTexts.length > 0 ? chatTexts : [''], config);
   }, [config]);
 
   return {

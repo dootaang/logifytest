@@ -173,7 +173,7 @@ interface ModernSliderProps {
   min: number;
   max: number;
   step?: number;
-  label: string;
+  label?: string;
   disabled?: boolean;
   className?: string;
 }
@@ -190,30 +190,33 @@ export const ModernSlider: React.FC<ModernSliderProps> = ({
 }) => {
   return (
     <div className={`slider-group ${className}`.trim()}>
-      <label className="form-label">
-        {label}: <span className="slider-value">{value}</span>
-      </label>
+      {label && (
+        <label className="form-label">
+          {label}: <span className="slider-value">{value}</span>
+        </label>
+      )}
       <input
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
-        className="slider"
+        className="slider-input"
       />
     </div>
   );
 };
 
-// 모던 콤보박스 컴포넌트
+// 모던 선택 박스 컴포넌트
 interface ModernSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   disabled?: boolean;
   className?: string;
+  allowCustom?: boolean;
 }
 
 export const ModernSelect: React.FC<ModernSelectProps> = ({
@@ -221,32 +224,67 @@ export const ModernSelect: React.FC<ModernSelectProps> = ({
   onChange,
   options,
   disabled = false,
-  className = ''
+  className = '',
+  allowCustom = false
 }) => {
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  
+  // 현재 값이 옵션에 없으면 커스텀 모드로 전환
+  useEffect(() => {
+    if (allowCustom && value && !options.some(option => option.value === value)) {
+      setIsCustomMode(true);
+    }
+  }, [value, options, allowCustom]);
+
+  if (allowCustom && isCustomMode) {
+    return (
+      <div className="select-custom-wrapper">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className={`form-input ${className}`.trim()}
+          placeholder="직접 입력..."
+        />
+        <button
+          type="button"
+          onClick={() => setIsCustomMode(false)}
+          className="button-small"
+          style={{ marginLeft: '8px' }}
+        >
+          목록
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      disabled={disabled}
-      className={`form-input ${className}`.trim()}
-      style={{
-        backgroundColor: STYLES.surface,
-        border: 'none',
-        borderRadius: `${STYLES.radius_normal}px`,
-        padding: '8px 12px',
-        fontSize: `${STYLES.font_size_normal}px`,
-        color: STYLES.text,
-        fontWeight: STYLES.font_weight_normal,
-        fontFamily: STYLES.font_family,
-        cursor: 'pointer'
-      }}
-    >
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
+    <div className="select-wrapper">
+      <select
+        value={value}
+        onChange={(e) => {
+          const selectedValue = e.target.value;
+          if (selectedValue === '__custom__') {
+            setIsCustomMode(true);
+            onChange('');
+          } else {
+            onChange(selectedValue);
+          }
+        }}
+        disabled={disabled}
+        className={`form-select ${className}`.trim()}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+        {allowCustom && (
+          <option value="__custom__">직접 입력...</option>
+        )}
+      </select>
+    </div>
   );
 };
 
@@ -415,5 +453,47 @@ export const ModernDarkModeToggle: React.FC<ModernDarkModeToggleProps> = ({
       <span style={{ fontSize: '16px' }}>{getThemeIcon()}</span>
       <span>{getThemeLabel()}</span>
     </button>
+  );
+};
+
+// 모던 토글 컴포넌트
+interface ModernToggleProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+export const ModernToggle: React.FC<ModernToggleProps> = ({
+  checked,
+  onChange,
+  label,
+  disabled = false,
+  className = ''
+}) => {
+  const id = useId();
+
+  return (
+    <div className={`toggle-group ${className}`.trim()}>
+      <div className="toggle-wrapper">
+        <input
+          type="checkbox"
+          id={id}
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          disabled={disabled}
+          className="toggle-input"
+        />
+        <label htmlFor={id} className="toggle-label">
+          <span className="toggle-switch"></span>
+        </label>
+      </div>
+      {label && (
+        <label htmlFor={id} className="toggle-text">
+          {label}
+        </label>
+      )}
+    </div>
   );
 }; 

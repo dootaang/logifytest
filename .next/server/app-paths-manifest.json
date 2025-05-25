@@ -1,3 +1,6 @@
 {
-  "/page": "app/page.js"
+  "/viewext/page": "app/viewext/page.js",
+  "/page": "app/page.js",
+  "/bookmarklet/page": "app/bookmarklet/page.js",
+  "/jelly/page": "app/jelly/page.js"
 }

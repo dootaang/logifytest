@@ -74,6 +74,21 @@ const colorThemes = {
   rose_plum: { h: '#d9534f', p: '#ec7063', e: '#8e44ad' }
 };
 
+// 미리 정의된 모델명 목록
+const modelNameOptions = [
+  'GPT-4o ChatGPT',
+  'GPT-4.5',
+  'Claude 3.7 Sonnet',
+  'Gemini pro 2.5',
+  'Gemini flash 2.0'
+];
+
+// 채팅 섹션 인터페이스
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
   config,
   onConfigChange,
@@ -83,14 +98,43 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
   onReset
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [chatSections, setChatSections] = useState([{ id: 'default', content: config.content || '' }]);
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
   const [presets, setPresets] = useState<{ [key: string]: ChatchanConfig }>({});
   const [presetName, setPresetName] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
 
-  // 마크다운 툴바 적용 함수
-  const applyMarkdown = (textareaRef: React.RefObject<HTMLTextAreaElement>, type: string) => {
-    const textarea = textareaRef.current;
+  // 자동 저장 키 상수
+  const AUTOSAVE_PREFIX = 'autoSavedChat_v30_';
+  const PRESET_STORAGE_KEY = 'chatLogPresets_v30';
+  const USER_MODIFIED_COLOR_FLAG = 'userModifiedLogColors_v30';
+
+  // 텍스트에어리어 참조들
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 마크다운 툴바 적용 함수 (개선된 버전)
+  const applyMarkdown = (sectionId: string, type: string) => {
+    const textarea = textareaRefs.current[sectionId];
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -120,22 +164,22 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     }
     
     const replacement = selectedText ? `${prefix}${selectedText}${suffix}` : `${prefix}${suffix}`;
-    const newValue = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
     const cursorPos = start + prefix.length;
     
-    textarea.value = newValue;
+    textarea.setRangeText(replacement, start, end, selectedText ? 'select' : 'end');
     if (!selectedText) {
       textarea.setSelectionRange(cursorPos, cursorPos);
     }
     textarea.focus();
     
-    // 내용 업데이트
-    updateChatSection(0, newValue);
+    // 내용 업데이트 및 자동 저장
+    const newValue = textarea.value;
+    updateChatSection(sectionId, newValue);
   };
 
-  // 접두사 적용 함수
-  const applyPrefix = (textareaRef: React.RefObject<HTMLTextAreaElement>, prefix: string) => {
-    const textarea = textareaRef.current;
+  // 접두사 적용 함수 (개선된 버전)
+  const applyPrefix = (sectionId: string, prefix: string) => {
+    const textarea = textareaRefs.current[sectionId];
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -147,30 +191,85 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     if (lineEnd === -1) lineEnd = value.length;
     
     const selectedLines = value.substring(lineStart, lineEnd).split('\n');
-    const newLines = selectedLines.map((line, i) => {
+    const newLines = selectedLines.map((line) => {
       const existingMatch = line.match(/^([\*\-]\s*|USER:\s*|AI:\s*)/i);
       const lineContent = existingMatch ? line.substring(existingMatch[0].length) : line;
       return prefix + lineContent;
     });
     
     const replacement = newLines.join('\n');
-    textarea.setRangeText(replacement, lineStart, lineEnd, 'preserve');
     const newCursorPos = lineStart + prefix.length;
+    
+    textarea.setRangeText(replacement, lineStart, lineEnd, 'preserve');
     textarea.setSelectionRange(newCursorPos, newCursorPos);
     textarea.focus();
     
-    // 내용 업데이트
-    updateChatSection(0, textarea.value);
+    // 내용 업데이트 및 자동 저장
+    updateChatSection(sectionId, textarea.value);
   };
 
   // 채팅 섹션 업데이트
-  const updateChatSection = (index: number, content: string) => {
-    const newSections = [...chatSections];
-    newSections[index].content = content;
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
     setChatSections(newSections);
     
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
     // 전체 내용을 하나로 합쳐서 config 업데이트
-    const combinedContent = newSections.map(section => section.content).join('\n\n');
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ content: combinedContent });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 채팅 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 채팅 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 전체 내용 업데이트
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ content: combinedContent });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 전체 내용 업데이트
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
     onConfigChange({ content: combinedContent });
   };
 
@@ -184,6 +283,32 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
       promptColor: theme.p,
       emphasisColor: theme.e
     });
+    
+    // 사용자가 색상을 수정했다고 표시
+    localStorage.setItem(USER_MODIFIED_COLOR_FLAG, 'true');
+  };
+
+  // 다크모드 토글 시 색상 자동 조정
+  const handleDarkModeToggle = (checked: boolean) => {
+    setIsDarkMode(checked);
+    
+    // 사용자가 색상을 수정하지 않았다면 자동으로 조정
+    const userModified = localStorage.getItem(USER_MODIFIED_COLOR_FLAG) === 'true';
+    if (!userModified) {
+      if (checked) {
+        // 다크모드로 전환
+        onConfigChange({
+          backgroundColor: '#242526',
+          textColor: '#e4e6eb'
+        });
+      } else {
+        // 라이트모드로 전환
+        onConfigChange({
+          backgroundColor: '#ffffff',
+          textColor: '#1d2129'
+        });
+      }
+    }
   };
 
   // 프리셋 저장
@@ -195,7 +320,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     
     const newPresets = { ...presets, [presetName]: config };
     setPresets(newPresets);
-    localStorage.setItem('chatchan_presets', JSON.stringify(newPresets));
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(newPresets));
     setPresetName('');
     alert(`프리셋 '${presetName}'이 저장되었습니다.`);
   };
@@ -209,7 +334,12 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     
     const preset = presets[selectedPreset];
     onConfigChange(preset);
-    setChatSections([{ id: 'default', content: preset.content || '' }]);
+    
+    // 채팅 섹션도 프리셋 내용으로 업데이트
+    if (preset.content) {
+      setChatSections([{ id: 'default', content: preset.content }]);
+    }
+    
     alert(`프리셋 '${selectedPreset}'을 불러왔습니다.`);
   };
 
@@ -227,7 +357,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     const newPresets = { ...presets };
     delete newPresets[selectedPreset];
     setPresets(newPresets);
-    localStorage.setItem('chatchan_presets', JSON.stringify(newPresets));
+    localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(newPresets));
     setSelectedPreset('');
     alert(`프리셋 '${selectedPreset}'이 삭제되었습니다.`);
   };
@@ -241,29 +371,115 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     const example = config.isAutoInputMode ? autoExample : prefixExample;
     const modeText = config.isAutoInputMode ? '(사칭방지용 예제)' : '(풀사칭용 예제)';
     
-    if (config.content && !confirm(`기존 내용이 있습니다. 예제로 덮어쓰시겠습니까?\n${modeText}`)) {
+    const hasContent = chatSections.some(section => section.content.trim());
+    if (hasContent && !confirm(`기존 내용이 있습니다. 예제로 덮어쓰시겠습니까?\n${modeText}`)) {
       return;
     }
     
+    // 첫 번째 섹션에 예제 로드
+    const newSections = [{ id: chatSections[0]?.id || 'default', content: example }];
+    setChatSections(newSections);
     onConfigChange({ content: example });
-    setChatSections([{ id: 'default', content: example }]);
+    
+    // 자동 저장
+    setupAutoSave(newSections[0].id, example);
+    
     alert(`예제가 로드되었습니다. ${modeText}`);
   };
 
-  // 컴포넌트 마운트 시 프리셋 로드
+  // 키보드 단축키 처리
+  const handleKeyDown = (event: KeyboardEvent) => {
+    const activeElement = document.activeElement as HTMLElement;
+    if (!activeElement || (activeElement.tagName !== 'TEXTAREA' && activeElement.tagName !== 'INPUT')) {
+      return;
+    }
+
+    // 현재 포커스된 텍스트에어리어의 섹션 ID 찾기
+    const sectionId = Object.keys(textareaRefs.current).find(id => 
+      textareaRefs.current[id] === activeElement
+    );
+    
+    if (!sectionId) return;
+
+    let handled = false;
+
+    if (event.ctrlKey && !event.shiftKey && event.altKey) {
+      // Ctrl+Alt 조합
+      switch (event.key) {
+        case '1':
+          applyPrefix(sectionId, '- ');
+          handled = true;
+          break;
+        case '2':
+          applyPrefix(sectionId, 'AI: ');
+          handled = true;
+          break;
+        case '3':
+          applyPrefix(sectionId, 'USER: ');
+          handled = true;
+          break;
+      }
+    } else if (event.ctrlKey && !event.shiftKey && !event.altKey) {
+      // Ctrl 조합
+      switch (event.key.toUpperCase()) {
+        case 'B':
+          applyMarkdown(sectionId, 'bold');
+          handled = true;
+          break;
+        case 'I':
+          applyMarkdown(sectionId, 'italic');
+          handled = true;
+          break;
+        case 'H':
+          applyMarkdown(sectionId, 'highlight');
+          handled = true;
+          break;
+        case 'E':
+          applyMarkdown(sectionId, 'emphasis');
+          handled = true;
+          break;
+      }
+    }
+
+    if (handled) {
+      event.preventDefault();
+    }
+  };
+
+  // 컴포넌트 마운트 시 설정
   useEffect(() => {
+    // 프리셋 로드
     try {
-      const savedPresets = localStorage.getItem('chatchan_presets');
+      const savedPresets = localStorage.getItem(PRESET_STORAGE_KEY);
       if (savedPresets) {
         setPresets(JSON.parse(savedPresets));
       }
     } catch (error) {
       console.error('프리셋 로드 오류:', error);
     }
+
+    // 자동 저장된 채팅 섹션 로드
+    const savedContent = loadAutoSaved('default');
+    if (savedContent && !config.content) {
+      setChatSections([{ id: 'default', content: savedContent }]);
+      onConfigChange({ content: savedContent });
+    }
+
+    // 키보드 이벤트 리스너 추가
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
-  // 텍스트에어리어 참조
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // 캐릭터 이미지 사용 토글 처리
+  const handleImageToggle = (checked: boolean) => {
+    onConfigChange({ useCharacterImage: checked });
+    if (!checked) {
+      onConfigChange({ characterImageUrl: '' });
+    }
+  };
 
   return (
     <div className="container">
@@ -281,7 +497,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
               <ModernFormGroup>
                 <ModernCheckbox
                   checked={isDarkMode}
-                  onChange={setIsDarkMode}
+                  onChange={handleDarkModeToggle}
                   label={isDarkMode ? '다크 모드' : '라이트 모드'}
                 />
               </ModernFormGroup>
@@ -304,10 +520,14 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                 />
               </ModernFormGroup>
               <ModernFormGroup label="AI 모델명">
-                <ModernInput
+                <ModernSelect
                   value={config.modelName}
                   onChange={(value) => onConfigChange({ modelName: value })}
-                  placeholder="모델명 선택 또는 직접 입력"
+                  options={[
+                    { value: '', label: '모델명 선택 또는 직접 입력' },
+                    ...modelNameOptions.map(name => ({ value: name, label: name }))
+                  ]}
+                  allowCustom={true}
                 />
               </ModernFormGroup>
             </ModernFormRow>
@@ -320,10 +540,14 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                 />
               </ModernFormGroup>
               <ModernFormGroup label="보조 모델명">
-                <ModernInput
+                <ModernSelect
                   value={config.assistModelName}
                   onChange={(value) => onConfigChange({ assistModelName: value })}
-                  placeholder="보조 모델명"
+                  options={[
+                    { value: '', label: '보조 모델명 선택 또는 직접 입력' },
+                    ...modelNameOptions.map(name => ({ value: name, label: name }))
+                  ]}
+                  allowCustom={true}
                 />
               </ModernFormGroup>
             </ModernFormRow>
@@ -332,14 +556,14 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                 <ModernInput
                   value={config.userName}
                   onChange={(value) => onConfigChange({ userName: value })}
-                  placeholder="사용자 이름"
+                  placeholder="사용자 이름 (기본값: USER)"
                 />
               </ModernFormGroup>
               <ModernFormGroup label="채팅 번호">
                 <ModernInput
                   value={config.chatNumber}
                   onChange={(value) => onConfigChange({ chatNumber: value })}
-                  placeholder="채팅 번호"
+                  placeholder="채팅 번호 (기본값: 랜덤)"
                 />
               </ModernFormGroup>
             </ModernFormRow>
@@ -347,11 +571,12 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
               <ModernInput
                 value={config.characterImageUrl}
                 onChange={(value) => onConfigChange({ characterImageUrl: value })}
-                placeholder="캐릭터 이미지 URL"
+                placeholder="https://example.com/image.png"
+                disabled={!config.useCharacterImage}
               />
               <ModernCheckbox
                 checked={config.useCharacterImage}
-                onChange={(checked) => onConfigChange({ useCharacterImage: checked })}
+                onChange={handleImageToggle}
                 label="캐릭터 이미지 사용"
               />
             </ModernFormGroup>
@@ -638,48 +863,91 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
               </div>
             </ModernHint>
 
-            {/* 마크다운 툴바 */}
-            <ModernFormGroup label="마크다운 툴바">
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', backgroundColor: 'var(--surface)', borderRadius: '8px' }}>
-                <ModernButton onClick={() => applyPrefix(textareaRef, '- ')}>
-                  나레이션 <kbd>Ctrl+Alt+1</kbd>
-                </ModernButton>
-                <ModernButton onClick={() => applyPrefix(textareaRef, 'AI: ')}>
-                  AI <kbd>Ctrl+Alt+2</kbd>
-                </ModernButton>
-                <ModernButton onClick={() => applyPrefix(textareaRef, 'USER: ')}>
-                  USER <kbd>Ctrl+Alt+3</kbd>
-                </ModernButton>
-                <div style={{ borderLeft: '1px solid var(--border)', margin: '0 8px' }}></div>
-                <ModernButton onClick={() => applyMarkdown(textareaRef, 'bold')}>
-                  <b>B</b> <kbd>Ctrl+B</kbd>
-                </ModernButton>
-                <ModernButton onClick={() => applyMarkdown(textareaRef, 'italic')}>
-                  <i>I</i> <kbd>Ctrl+I</kbd>
-                </ModernButton>
-                <ModernButton onClick={() => applyMarkdown(textareaRef, 'boldItalic')}>
-                  <b><i>BI</i></b>
-                </ModernButton>
-                <ModernButton onClick={() => applyMarkdown(textareaRef, 'highlight')}>
-                  하이라이트 <kbd>Ctrl+H</kbd>
-                </ModernButton>
-                <ModernButton onClick={() => applyMarkdown(textareaRef, 'emphasis')}>
-                  강조 <kbd>Ctrl+E</kbd>
-                </ModernButton>
-              </div>
-            </ModernFormGroup>
+            {/* 채팅 섹션들 */}
+            {chatSections.map((section, index) => (
+              <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                {/* 섹션 헤더 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    채팅 입력 {chatSections.length > 1 ? `${index + 1}` : ''}
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'up')}
+                      disabled={index === 0}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▲
+                    </ModernButton>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'down')}
+                      disabled={index === chatSections.length - 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▼
+                    </ModernButton>
+                    <ModernButton
+                      danger
+                      onClick={() => removeChatSection(section.id)}
+                      disabled={chatSections.length <= 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      X
+                    </ModernButton>
+                  </div>
+                </div>
 
-            {/* 텍스트에어리어 */}
-            <ModernFormGroup label="채팅 내용">
-              <ModernTextarea
-                value={config.content}
-                onChange={(value) => {
-                  onConfigChange({ content: value });
-                  updateChatSection(0, value);
-                }}
-                placeholder="- 화창한 봄날, 공원에서 우연히 만난 두 사람은..."
-                rows={8}
-              />
+                {/* 마크다운 툴바 */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', backgroundColor: 'var(--surface)', borderRadius: '8px', marginBottom: '12px' }}>
+                  <ModernButton onClick={() => applyPrefix(section.id, '- ')}>
+                    나레이션 <kbd>Ctrl+Alt+1</kbd>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyPrefix(section.id, 'AI: ')}>
+                    AI <kbd>Ctrl+Alt+2</kbd>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyPrefix(section.id, 'USER: ')}>
+                    USER <kbd>Ctrl+Alt+3</kbd>
+                  </ModernButton>
+                  <div style={{ borderLeft: '1px solid var(--border)', margin: '0 8px' }}></div>
+                  <ModernButton onClick={() => applyMarkdown(section.id, 'bold')}>
+                    <b>B</b> <kbd>Ctrl+B</kbd>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyMarkdown(section.id, 'italic')}>
+                    <i>I</i> <kbd>Ctrl+I</kbd>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyMarkdown(section.id, 'boldItalic')}>
+                    <b><i>BI</i></b>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyMarkdown(section.id, 'highlight')}>
+                    하이라이트 <kbd>Ctrl+H</kbd>
+                  </ModernButton>
+                  <ModernButton onClick={() => applyMarkdown(section.id, 'emphasis')}>
+                    강조 <kbd>Ctrl+E</kbd>
+                  </ModernButton>
+                </div>
+
+                {/* 텍스트에어리어 */}
+                <textarea
+                  ref={(el) => {
+                    if (el) {
+                      textareaRefs.current[section.id] = el;
+                    }
+                  }}
+                  value={section.content}
+                  onChange={(e) => updateChatSection(section.id, e.target.value)}
+                  placeholder="- 화창한 봄날, 공원에서 우연히 만난 두 사람은..."
+                  rows={8}
+                  className="form-input form-textarea"
+                  style={{ width: '100%', minHeight: '200px' }}
+                />
+              </div>
+            ))}
+
+            {/* 채팅 섹션 추가 버튼 */}
+            <ModernFormGroup>
+              <ModernButton onClick={addChatSection}>
+                채팅 섹션 추가
+              </ModernButton>
             </ModernFormGroup>
           </ModernSection>
 

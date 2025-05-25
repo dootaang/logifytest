@@ -10,6 +10,16 @@
   --text-secondary: #6C6C70;
   --border: #C6C6C8;
   
+  /* 새로운 색상 변수들 */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-hover: #F1F5F9;
+  --text-primary: #1E293B;
+  --border-color: #E2E8F0;
+  --border-hover: #CBD5E1;
+  --accent-color: #8B5CF6;
+  --accent-secondary: #06B6D4;
+  
   /* 폰트 */
   --font-family: 'Segoe UI', Roboto, Arial, sans-serif;
   --font-size-large: 16px;
@@ -46,6 +56,16 @@
     --border: #38383A;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+    
+    /* 새로운 다크모드 색상 변수들 */
+    --bg-primary: #1C1C1E;
+    --bg-secondary: #2C2C2E;
+    --bg-hover: #3A3A3C;
+    --text-primary: #FFFFFF;
+    --border-color: #38383A;
+    --border-hover: #48484A;
+    --accent-color: #8B5CF6;
+    --accent-secondary: #06B6D4;
   }
 }
 
@@ -61,6 +81,16 @@
   --border: #38383A;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  
+  /* 새로운 다크모드 색상 변수들 */
+  --bg-primary: #1C1C1E;
+  --bg-secondary: #2C2C2E;
+  --bg-hover: #3A3A3C;
+  --text-primary: #FFFFFF;
+  --border-color: #38383A;
+  --border-hover: #48484A;
+  --accent-color: #8B5CF6;
+  --accent-secondary: #06B6D4;
 }
 
 /* 수동 라이트모드 클래스 */
@@ -75,6 +105,16 @@
   --border: #C6C6C8;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+  
+  /* 새로운 라이트모드 색상 변수들 */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8FAFC;
+  --bg-hover: #F1F5F9;
+  --text-primary: #1E293B;
+  --border-color: #E2E8F0;
+  --border-hover: #CBD5E1;
+  --accent-color: #8B5CF6;
+  --accent-secondary: #06B6D4;
 }
 
 * {
@@ -642,4 +682,145 @@ body {
   .default-images-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* 챗챈형 생성기 전용 스타일 */
+.select-custom-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-small);
+}
+
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.form-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-normal);
+  padding: var(--spacing-small) var(--spacing-normal);
+  font-size: var(--font-size-normal);
+  color: var(--text);
+  font-weight: var(--font-weight-normal);
+  font-family: var(--font-family);
+  cursor: pointer;
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right var(--spacing-small) center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(176, 178, 198, 0.1);
+}
+
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-small {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button-small:hover {
+  background: var(--background);
+  border-color: var(--primary);
+}
+
+/* 키보드 단축키 표시 */
+kbd {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-secondary);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* 채팅 섹션 스타일 */
+.chat-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-normal);
+  padding: var(--spacing-normal);
+  margin-bottom: var(--spacing-normal);
+  background: var(--surface);
+}
+
+.chat-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-small);
+}
+
+.chat-section-controls {
+  display: flex;
+  gap: var(--spacing-small);
+}
+
+.markdown-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-small);
+  padding: var(--spacing-small);
+  background: var(--background);
+  border-radius: var(--radius-normal);
+  margin-bottom: var(--spacing-small);
+  border: 1px solid var(--border);
+}
+
+.markdown-toolbar .button {
+  padding: 4px 8px;
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.markdown-toolbar .button:hover {
+  background: var(--background);
+  border-color: var(--primary);
+}
+
+.toolbar-divider {
+  border-left: 1px solid var(--border);
+  margin: 0 var(--spacing-small);
+}
+
+/* 자동 저장 표시 */
+.autosave-indicator {
+  font-size: var(--font-size-small);
+  color: var(--text-secondary);
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.autosave-indicator.visible {
+  opacity: 1;
+}
+
+.autosave-indicator.saving {
+  color: var(--primary);
+}
+
+.autosave-indicator.saved {
+  color: var(--success);
 } 

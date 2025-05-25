@@ -190,7 +190,7 @@
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("87cb700977751d55")
+/******/ 		__webpack_require__.h = () => ("f9fd8a9050207176")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
@@ -697,7 +697,7 @@
 /******/ 	
 /******/ 	/* webpack/runtime/publicPath */
 /******/ 	(() => {
-/******/ 		__webpack_require__.p = "./_next/";
+/******/ 		__webpack_require__.p = "/_next/";
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/react refresh */
