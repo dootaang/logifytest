@@ -98,77 +98,79 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
     return processedText
   }
 
-  const generateHTML = () => {
-    const processedContent = applyWordReplacements(config.content)
+  // 참고 코드 스타일로 문단 처리
+  const processContent = (content: string) => {
+    const processedContent = applyWordReplacements(content)
     const paragraphs = processedContent.split('\n\n').filter(p => p.trim())
     
-    const contentHTML = paragraphs.map(paragraph => {
+    return paragraphs.map((paragraph, index) => {
       const trimmedParagraph = paragraph.trim()
       
-      // 기본 스타일 정의 - 본문 색상 적용
-      let paragraphStyle = `color: ${config.contentTextColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};`
+      // 큰따옴표 스타일 정의
+      let quoteStyle = `font-weight:${config.boldEnabled ? 'bold' : '500'};`
+      
+      if (config.quoteColorEnabled) {
+        if (config.quoteGradientEnabled) {
+          // 그라데이션 활성화 - 참고 코드 스타일
+          quoteStyle += `background:linear-gradient(to right,${config.quoteColor1},${config.quoteColor2});background-clip:text;color:transparent;box-decoration-break:clone;`
+        } else {
+          // 단색 활성화
+          quoteStyle += `color: ${config.quoteColor1};`
+        }
+      } else {
+        // 기본 색상
+        quoteStyle += `color: ${config.contentTextColor};`
+      }
+      
+      // 작은따옴표 스타일 정의
+      let singleQuoteStyle = `color: ${config.singleQuoteColor};`
+      if (config.singleQuoteItalic) {
+        singleQuoteStyle += ' font-style: italic;'
+      }
+      
+      // 일반 텍스트 스타일 - 폰트 크기 적용
+      const normalTextStyle = `color: ${config.contentTextColor}; font-size: ${config.fontSize}px;`
+      
+      // 문단 스타일 정의 - 폰트 크기, 줄 간격, 들여쓰기 적용
+      let paragraphStyle = `font-size: ${config.fontSize}px; line-height: ${config.lineHeight};`
       if (config.paragraphIndent) {
         paragraphStyle += ' text-indent: 1.5em;'
       }
       
-      // 큰따옴표와 작은따옴표 모두 처리
-      if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        // 큰따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
-        let processedParagraph = trimmedParagraph
-        
-        // 큰따옴표 스타일 - 그라데이션 지원
-        let quoteStyle = `font-size: ${config.fontSize}px; display: inline-block;`
-        
-        if (config.quoteColorEnabled) {
-          if (config.quoteGradientEnabled) {
-            // 그라데이션 활성화
-            quoteStyle += `background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: ${config.boldEnabled ? 'bold' : '500'};`
-          } else {
-            // 단색 활성화
-            quoteStyle += `color: ${config.quoteColor1}; font-weight: ${config.boldEnabled ? 'bold' : '500'};`
-          }
-        } else {
-          // 기본 색상
-          quoteStyle += `color: ${config.contentTextColor}; font-weight: ${config.boldEnabled ? 'bold' : 'normal'};`
+      // 문단을 토큰으로 분할하여 처리 (참고 코드 방식)
+      let processedParagraph = trimmedParagraph
+      
+      // 큰따옴표 처리 - 폰트 크기 추가
+      const updatedQuoteStyle = quoteStyle + ` font-size: ${config.fontSize}px;`
+      processedParagraph = processedParagraph.replace(/"([^"]*?)"/g, `<span style="${updatedQuoteStyle}">"$1"</span>`)
+      
+      // 작은따옴표 처리 - 폰트 크기 추가
+      const updatedSingleQuoteStyle = singleQuoteStyle + ` font-size: ${config.fontSize}px;`
+      processedParagraph = processedParagraph.replace(/'([^']*?)'/g, `<span style="${updatedSingleQuoteStyle}">'$1'</span>`)
+      
+      // 일반 텍스트 부분을 span으로 감싸기 (참고 코드 스타일)
+      // 이미 span으로 감싸지지 않은 텍스트를 찾아서 감싸기
+      const parts = processedParagraph.split(/(<span[^>]*>.*?<\/span>)/g)
+      const wrappedParts = parts.map(part => {
+        if (part.startsWith('<span')) {
+          return part // 이미 span으로 감싸진 부분은 그대로
+        } else if (part.trim()) {
+          return `<span style="${normalTextStyle}">${part}</span>` // 일반 텍스트는 span으로 감싸기
         }
-        
-        // 정규표현식으로 모든 큰따옴표 쌍을 찾아서 스타일 적용
-        processedParagraph = processedParagraph.replace(/"([^"]*?)"/g, `<span style="${quoteStyle}">"$1"</span>`)
-        
-        return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
-
-    <p>
-      <br>
-    </p>`
-      } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        // 작은따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
-        let processedParagraph = trimmedParagraph
-        
-        let singleQuoteStyle = `color: ${config.singleQuoteColor}; font-size: ${config.fontSize}px; display: inline-block;`
-        if (config.singleQuoteItalic) {
-          singleQuoteStyle += ' font-style: italic;'
-        }
-        
-        // 정규표현식으로 모든 작은따옴표 쌍을 찾아서 스타일 적용
-        processedParagraph = processedParagraph.replace(/'([^']*?)'/g, `<span style="${singleQuoteStyle}">'$1'</span>`)
-        
-        return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
-
-    <p>
-      <br>
-    </p>`
-      } else {
-        return `
-    <p style="${paragraphStyle}">${trimmedParagraph}</p>
-
-    <p>
-      <br>
-    </p>`
-      }
+        return part
+      })
+      
+      const finalParagraph = wrappedParts.join('')
+      
+      // 마지막 문단이 아닌 경우에만 빈 줄 추가 (참고 코드 스타일)
+      const spacing = index < paragraphs.length - 1 ? '\n\n<p><br></p>' : ''
+      return `<p style="${paragraphStyle}">${finalParagraph}</p>${spacing}`
     }).join('')
+  }
 
+  const generateHTML = () => {
+    const contentHTML = processContent(config.content)
+    
     // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
     const finalImageUrl = normalizeImageUrl(config.backgroundImage)
 
@@ -198,76 +200,8 @@ ${contentHTML}
 
   // 미리보기 전용 HTML 생성 (프록시 사용)
   const generatePreviewHTML = () => {
-    const processedContent = applyWordReplacements(config.content)
-    const paragraphs = processedContent.split('\n\n').filter(p => p.trim())
+    const contentHTML = processContent(config.content)
     
-    const contentHTML = paragraphs.map(paragraph => {
-      const trimmedParagraph = paragraph.trim()
-      
-      // 기본 스타일 정의 - 본문 색상 적용
-      let paragraphStyle = `color: ${config.contentTextColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};`
-      if (config.paragraphIndent) {
-        paragraphStyle += ' text-indent: 1.5em;'
-      }
-      
-      // 큰따옴표와 작은따옴표 모두 처리
-      if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        // 큰따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
-        let processedParagraph = trimmedParagraph
-        
-        // 큰따옴표 스타일 - 그라데이션 지원
-        let quoteStyle = `font-size: ${config.fontSize}px; display: inline-block;`
-        
-        if (config.quoteColorEnabled) {
-          if (config.quoteGradientEnabled) {
-            // 그라데이션 활성화
-            quoteStyle += `background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: ${config.boldEnabled ? 'bold' : '500'};`
-          } else {
-            // 단색 활성화
-            quoteStyle += `color: ${config.quoteColor1}; font-weight: ${config.boldEnabled ? 'bold' : '500'};`
-          }
-        } else {
-          // 기본 색상
-          quoteStyle += `color: ${config.contentTextColor}; font-weight: ${config.boldEnabled ? 'bold' : 'normal'};`
-        }
-        
-        // 정규표현식으로 모든 큰따옴표 쌍을 찾아서 스타일 적용
-        processedParagraph = processedParagraph.replace(/"([^"]*?)"/g, `<span style="${quoteStyle}">"$1"</span>`)
-        
-        return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
-
-    <p>
-      <br>
-    </p>`
-      } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        // 작은따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
-        let processedParagraph = trimmedParagraph
-        
-        let singleQuoteStyle = `color: ${config.singleQuoteColor}; font-size: ${config.fontSize}px; display: inline-block;`
-        if (config.singleQuoteItalic) {
-          singleQuoteStyle += ' font-style: italic;'
-        }
-        
-        // 정규표현식으로 모든 작은따옴표 쌍을 찾아서 스타일 적용
-        processedParagraph = processedParagraph.replace(/'([^']*?)'/g, `<span style="${singleQuoteStyle}">'$1'</span>`)
-        
-        return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
-
-    <p>
-      <br>
-    </p>`
-      } else {
-        return `
-    <p style="${paragraphStyle}">${trimmedParagraph}</p>
-
-    <p>
-      <br>
-    </p>`
-      }
-    }).join('')
-
     // 미리보기용 - 프록시 사용 (CORS 우회)
     const finalImageUrl = getPreviewImageUrl(config.backgroundImage)
 

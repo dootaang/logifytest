@@ -42,30 +42,30 @@ export default function Navigation({ currentGenerator }: NavigationProps) {
         return
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        router.push(path)
-        return
-      }
-
+      // RSC prefetching 최적화 - 에러 무시하고 진행
       try {
         await router.prefetch(path)
       } catch (prefetchError) {
-        console.warn('Prefetch failed, proceeding with navigation:', prefetchError)
+        // prefetch 에러는 무시하고 계속 진행
+        console.debug('Prefetch skipped:', prefetchError)
       }
       
+      // 네비게이션 실행
       router.push(path)
       
     } catch (error) {
       console.error('Navigation error:', error)
       setNavigationError('페이지 로딩 중 오류가 발생했습니다. 페이지를 새로고침해주세요.')
       
+      // 폴백으로 직접 이동
       if (typeof window !== 'undefined') {
         window.location.href = path
       }
     } finally {
+      // 네비게이션 상태 리셋
       setTimeout(() => {
         setIsNavigating(false)
-      }, 1000)
+      }, 500)
     }
   }, [pathname, router])
 
@@ -83,6 +83,12 @@ export default function Navigation({ currentGenerator }: NavigationProps) {
       return () => document.removeEventListener('click', handleClickOutside)
     }
   }, [isDropdownOpen])
+
+  // 페이지 변경 감지하여 네비게이션 상태 리셋
+  useEffect(() => {
+    setIsNavigating(false)
+    setNavigationError(null)
+  }, [pathname])
 
   // 에러 메시지 자동 제거
   useEffect(() => {

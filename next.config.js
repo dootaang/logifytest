@@ -10,10 +10,13 @@ const nextConfig = {
   assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
   basePath: '',
   
-  // 정적 내보내기 최적화
+  // RSC prefetching 최적화
   experimental: {
-    optimizePackageImports: ['react', 'react-dom']
+    optimizePackageImports: ['react', 'react-dom'],
   },
+  
+  // 서버 외부 패키지 설정
+  serverExternalPackages: [],
   
   // 웹팩 설정으로 청크 문제 해결
   webpack: (config, { isServer, dev }) => {
