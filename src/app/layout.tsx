@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import RSCErrorSuppressor from '@/components/RSCErrorSuppressor'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <RSCErrorSuppressor />
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

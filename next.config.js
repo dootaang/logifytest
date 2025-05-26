@@ -13,6 +13,8 @@ const nextConfig = {
   // RSC prefetching 최적화
   experimental: {
     optimizePackageImports: ['react', 'react-dom'],
+    // RSC 관련 최적화
+    typedRoutes: false,
   },
   
   // 서버 외부 패키지 설정

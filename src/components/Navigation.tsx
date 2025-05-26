@@ -106,7 +106,7 @@ export default function Navigation({ currentGenerator }: NavigationProps) {
         {/* 왼쪽 영역 */}
         <div className="modern-nav-left">
           {/* 메인 로고 버튼 */}
-          <Link href="/" className="modern-nav-home">
+          <Link href="/" className="modern-nav-home" prefetch={false}>
             <span className="modern-nav-home-icon">🛠️</span>
             <span className="modern-nav-home-text">메인화면</span>
           </Link>

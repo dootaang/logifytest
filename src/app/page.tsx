@@ -141,6 +141,7 @@ export default function HomePage() {
                   key={generator.id}
                   href={generator.path}
                   className="generator-option"
+                  prefetch={false}
                 >
                   <div className="generator-icon">{generator.icon}</div>
                   <div className="generator-name">{generator.name}</div>

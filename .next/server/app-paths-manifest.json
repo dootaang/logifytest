@@ -1,9 +1,8 @@
 {
-  "/jelly/page": "app/jelly/page.js",
-  "/page": "app/page.js",
-  "/chatchan/page": "app/chatchan/page.js",
   "/bookmarklet/page": "app/bookmarklet/page.js",
+  "/page": "app/page.js",
   "/banner/page": "app/banner/page.js",
+  "/chatchan/page": "app/chatchan/page.js",
   "/bingdun/page": "app/bingdun/page.js",
-  "/viewext/page": "app/viewext/page.js"
+  "/jelly/page": "app/jelly/page.js"
 }

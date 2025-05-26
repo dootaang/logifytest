@@ -156,38 +156,34 @@ export async function safeImport<T>(
 }
 
 /**
- * 페이지 프리로드 유틸리티
+ * 페이지 프리로드 유틸리티 (RSC 에러 방지)
  */
 export class PagePreloader {
   private static preloadedPages = new Set<string>()
 
   /**
-   * 페이지 프리로드
+   * 페이지 프리로드 (비활성화)
    */
   static async preloadPage(path: string): Promise<void> {
     if (this.preloadedPages.has(path)) {
       return
     }
 
-    try {
-      // Next.js 라우터를 통한 프리로드
-      if (typeof window !== 'undefined' && window.next?.router) {
-        await window.next.router.prefetch(path)
-      }
-
-      this.preloadedPages.add(path)
-      console.log(`Page preloaded: ${path}`)
-    } catch (error) {
-      console.warn(`Failed to preload page ${path}:`, error)
-    }
+    // RSC 404 에러를 방지하기 위해 프리로드 비활성화
+    // 대신 페이지 방문 시에만 로딩하도록 함
+    this.preloadedPages.add(path)
+    console.debug(`Page marked for lazy loading: ${path}`)
   }
 
   /**
-   * 여러 페이지 일괄 프리로드
+   * 여러 페이지 일괄 프리로드 (비활성화)
    */
   static async preloadPages(paths: string[]): Promise<void> {
-    const promises = paths.map(path => this.preloadPage(path))
-    await Promise.allSettled(promises)
+    // 모든 프리로딩을 비활성화하여 RSC 404 에러 방지
+    paths.forEach(path => {
+      this.preloadedPages.add(path)
+      console.debug(`Page marked for lazy loading: ${path}`)
+    })
   }
 }
 
