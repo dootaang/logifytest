@@ -158,7 +158,7 @@ export const useChatchanGeneratorV2 = (config: ChatchanConfig) => {
         
         if (styledNameParts.length > 0) {
           const joinedStyledNames = styledNameParts.join('&ensp;');
-          const outerSpanStyle = `font-size: 11px; font-weight: 400; color:#fff; line-height:1; letter-spacing:0em`;
+          const outerSpanStyle = `font-size: 11px; font-weight: 400; color:#ffffff; line-height:1; letter-spacing:0em`;
           headerInfoSpanContent = `<span style="${outerSpanStyle}">${joinedStyledNames}</span>`;
         }
       } else {

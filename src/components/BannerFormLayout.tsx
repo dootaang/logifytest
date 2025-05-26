@@ -772,7 +772,7 @@ const BannerFormLayout = ({
                                   </ModernButton>
                                   <ModernButton
                                     onClick={() => handleTagChange(index, 'border_color', '#ffffff')}
-                                    style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #ccc' }}
+                                    style={{ backgroundColor: '#ffffff', color: '#000000', border: '1px solid #cccccc' }}
                                   >
                                     화이트
                                   </ModernButton>

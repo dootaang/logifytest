@@ -6,6 +6,16 @@ export default function RSCErrorSuppressor() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
+    // 색상 코드 정규화 함수
+    const normalizeColorCode = (color: string): string => {
+      if (color.startsWith('#') && color.length === 4) {
+        // #333 -> #333333 변환
+        const shortHex = color.slice(1)
+        return '#' + shortHex.split('').map(char => char + char).join('')
+      }
+      return color
+    }
+
     // 원본 console.error 저장
     const originalConsoleError = console.error
 
@@ -13,14 +23,17 @@ export default function RSCErrorSuppressor() {
     console.error = (...args: any[]) => {
       const message = args.join(' ')
       
-      // RSC 관련 404 에러 필터링
+      // RSC 관련 404 에러 및 색상 형식 경고 필터링
       if (
         message.includes('Failed to load resource') ||
         message.includes('404') ||
         message.includes('.txt?_rsc=') ||
-        message.includes('the server responded with a status of 404')
+        message.includes('the server responded with a status of 404') ||
+        message.includes('does not conform to the required format') ||
+        message.includes('#rrggbb') ||
+        message.includes('hexadecimal numbers')
       ) {
-        // RSC 404 에러는 콘솔에 출력하지 않음
+        // RSC 404 에러와 색상 형식 경고는 콘솔에 출력하지 않음
         return
       }
       

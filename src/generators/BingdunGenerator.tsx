@@ -125,7 +125,7 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
       cardBackground: '#ffffff',
       cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
       profileBorder: '#ffffff',
-      textColor: '#333',
+      textColor: '#333333',
       nameColor: '#000000',
       tagTextColor: config.tagTextColor,
       tagBackgroundColor: config.tagBackgroundColor,
@@ -163,7 +163,7 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
           cardBackground: '#ffffff',
           cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
           profileBorder: '#ffffff',
-          textColor: '#333',
+          textColor: '#333333',
           nameColor: '#000000',
           tagTextColor: config.tagStyle === 'outline' ? '#000000' : config.tagTextColor,
           tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : config.tagBackgroundColor,
@@ -243,9 +243,9 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         ${tagHTML ? `<div style="margin-top:1rem;text-align:center;">${tagHTML}</div>` : ''}
     </div>
 
-    <hr style="border-color: ${config.designTheme === 'white' ? '#eee' : '#444'};">`;
+    <hr style="border-color: ${config.designTheme === 'white' ? '#eeeeee' : '#444444'};">`;
 
-    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
 
     ${profileSectionHTML}
 

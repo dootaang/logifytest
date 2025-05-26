@@ -26,7 +26,7 @@ const defaultBingdunConfig = {
   singleQuoteItalic: false,
   singleQuoteColor: '#666666',
   contentBackgroundColor: 'rgba(250, 250, 250, 1)',
-  contentTextColor: '#333',
+  contentTextColor: '#333333',
   fontSize: 14,
   lineHeight: 1.75,
   paragraphIndent: false,
