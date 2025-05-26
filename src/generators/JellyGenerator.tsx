@@ -113,10 +113,8 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
       
       // 큰따옴표와 작은따옴표 모두 처리
       if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        // 큰따옴표 처리
-        const beforeQuote = trimmedParagraph.split('"')[0]
-        const quote = trimmedParagraph.split('"')[1]
-        const afterQuote = trimmedParagraph.split('"')[2] || ''
+        // 큰따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
+        let processedParagraph = trimmedParagraph
         
         // 큰따옴표 스타일 - 그라데이션 지원
         let quoteStyle = `font-size: ${config.fontSize}px; display: inline-block;`
@@ -134,25 +132,29 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
           quoteStyle += `color: ${config.contentTextColor}; font-weight: ${config.boldEnabled ? 'bold' : 'normal'};`
         }
         
+        // 정규표현식으로 모든 큰따옴표 쌍을 찾아서 스타일 적용
+        processedParagraph = processedParagraph.replace(/"([^"]*?)"/g, `<span style="${quoteStyle}">"$1"</span>`)
+        
         return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${beforeQuote}</span><span style="${quoteStyle}">"${quote}"</span><span style="color: ${config.contentTextColor};">${afterQuote}</span></p>
+    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
 
     <p>
       <br>
     </p>`
       } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        // 작은따옴표 처리
-        const beforeQuote = trimmedParagraph.split("'")[0]
-        const quote = trimmedParagraph.split("'")[1]
-        const afterQuote = trimmedParagraph.split("'")[2] || ''
+        // 작은따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
+        let processedParagraph = trimmedParagraph
         
         let singleQuoteStyle = `color: ${config.singleQuoteColor}; font-size: ${config.fontSize}px; display: inline-block;`
         if (config.singleQuoteItalic) {
           singleQuoteStyle += ' font-style: italic;'
         }
         
+        // 정규표현식으로 모든 작은따옴표 쌍을 찾아서 스타일 적용
+        processedParagraph = processedParagraph.replace(/'([^']*?)'/g, `<span style="${singleQuoteStyle}">'$1'</span>`)
+        
         return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${beforeQuote}</span><span style="${singleQuoteStyle}">'${quote}'</span><span style="color: ${config.contentTextColor};">${afterQuote}</span></p>
+    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
 
     <p>
       <br>
@@ -210,10 +212,8 @@ ${contentHTML}
       
       // 큰따옴표와 작은따옴표 모두 처리
       if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        // 큰따옴표 처리
-        const beforeQuote = trimmedParagraph.split('"')[0]
-        const quote = trimmedParagraph.split('"')[1]
-        const afterQuote = trimmedParagraph.split('"')[2] || ''
+        // 큰따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
+        let processedParagraph = trimmedParagraph
         
         // 큰따옴표 스타일 - 그라데이션 지원
         let quoteStyle = `font-size: ${config.fontSize}px; display: inline-block;`
@@ -231,25 +231,29 @@ ${contentHTML}
           quoteStyle += `color: ${config.contentTextColor}; font-weight: ${config.boldEnabled ? 'bold' : 'normal'};`
         }
         
+        // 정규표현식으로 모든 큰따옴표 쌍을 찾아서 스타일 적용
+        processedParagraph = processedParagraph.replace(/"([^"]*?)"/g, `<span style="${quoteStyle}">"$1"</span>`)
+        
         return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${beforeQuote}</span><span style="${quoteStyle}">"${quote}"</span><span style="color: ${config.contentTextColor};">${afterQuote}</span></p>
+    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
 
     <p>
       <br>
     </p>`
       } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        // 작은따옴표 처리
-        const beforeQuote = trimmedParagraph.split("'")[0]
-        const quote = trimmedParagraph.split("'")[1]
-        const afterQuote = trimmedParagraph.split("'")[2] || ''
+        // 작은따옴표 처리 - 정규표현식으로 모든 따옴표 쌍을 찾아서 처리
+        let processedParagraph = trimmedParagraph
         
         let singleQuoteStyle = `color: ${config.singleQuoteColor}; font-size: ${config.fontSize}px; display: inline-block;`
         if (config.singleQuoteItalic) {
           singleQuoteStyle += ' font-style: italic;'
         }
         
+        // 정규표현식으로 모든 작은따옴표 쌍을 찾아서 스타일 적용
+        processedParagraph = processedParagraph.replace(/'([^']*?)'/g, `<span style="${singleQuoteStyle}">'$1'</span>`)
+        
         return `
-    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${beforeQuote}</span><span style="${singleQuoteStyle}">'${quote}'</span><span style="color: ${config.contentTextColor};">${afterQuote}</span></p>
+    <p style="${paragraphStyle}"><span style="color: ${config.contentTextColor};">${processedParagraph}</span></p>
 
     <p>
       <br>

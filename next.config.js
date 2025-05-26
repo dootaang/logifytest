@@ -1,24 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 개발 환경에서는 정적 export 비활성화
-  ...(process.env.NODE_ENV === 'production' && {
-    output: 'export',
-    trailingSlash: true,
-    assetPrefix: './',
-  }),
+  output: 'export',
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
   images: {
     unoptimized: true
   },
+  // 정적 파일 경로를 절대 경로로 설정
+  assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
   basePath: '',
-  // 청크 로딩 오류 방지를 위한 설정
+  
+  // 정적 내보내기 최적화
   experimental: {
     optimizePackageImports: ['react', 'react-dom']
   },
-  // 정적 내보내기에서 더 안정적인 청크 처리
+  
+  // 웹팩 설정으로 청크 문제 해결
   webpack: (config, { isServer, dev }) => {
     if (!isServer && !dev) {
+      // 정적 내보내기에서 안정적인 청크 처리
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           default: {
             minChunks: 1,
@@ -35,7 +39,16 @@ const nextConfig = {
       }
     }
     return config
-  }
+  },
+  
+  // 정적 파일 생성 시 더 안정적인 설정
+  generateEtags: false,
+  poweredByHeader: false,
+  
+  // 개발 환경에서의 설정
+  ...(process.env.NODE_ENV === 'development' && {
+    reactStrictMode: true,
+  })
 }
 
 module.exports = nextConfig 

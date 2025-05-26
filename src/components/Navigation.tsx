@@ -25,7 +25,10 @@ export default function Navigation({ currentGenerator }: NavigationProps) {
   const pathname = usePathname()
   const router = useRouter()
 
-  const currentGen = generators.find(gen => gen.path === pathname) || generators[0]
+  // currentGenerator prop이 있으면 우선 사용, 없으면 pathname으로 찾기
+  const currentGen = currentGenerator 
+    ? generators.find(gen => gen.id === currentGenerator) || generators.find(gen => gen.path === pathname) || generators[0]
+    : generators.find(gen => gen.path === pathname) || generators[0]
 
   // 안전한 네비게이션 핸들러
   const handleNavigation = useCallback(async (path: string) => {
