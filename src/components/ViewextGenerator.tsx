@@ -2,88 +2,120 @@
 
 import React from 'react'
 
-// 뷰익형 설정 인터페이스
+interface WordReplacement {
+  from: string;
+  to: string;
+}
+
+// 새로운 뷰익형 설정 인터페이스 (제공된 HTML 구조 기반)
 export interface ViewextConfig {
+  // 기본 콘텐츠
   content: string
-  characterName: string
-  userName: string
-  colorTheme: string
-  layoutType: 'vertical' | 'horizontal'
-  showImages: boolean
+  title: string
+  
+  // 이미지 설정
+  mainImageUrl: string
+  showMainImage: boolean
+  imageMaxWidth: number
+  
+  // 색상 및 스타일 설정
+  backgroundColor: string
+  backgroundGradient: string
+  titleColor: string
+  textColor: string
+  borderColor: string
+  
+  // 하이라이트 박스 설정
+  highlightBoxColor: string
+  highlightBoxBorderColor: string
+  highlightBoxTextColor: string
+  
+  // 대화 박스 설정
+  dialogueBoxColor: string
+  dialogueBoxBorderColor: string
+  dialogueBoxTextColor: string
+  
+  // 폰트 설정
   fontFamily: string
-  letterSpacing: number
+  fontSize: number
   lineHeight: number
-  enableScroll: boolean
-  enableFoldToggle: boolean
-  characterImageUrl?: string
-  userImageUrl?: string
+  letterSpacing: number
+  
+  // 레이아웃 설정
+  maxWidth: number
+  paddingTop: number
+  paddingRight: number
+  paddingBottom: number
+  paddingLeft: number
+  borderRadius: number
+  shadowBlur: number
+  shadowSpread: number
+  
+  // 고급 설정
+  enableCustomCSS: boolean
+  customCSS: string
+  
+  // 단어 변환 기능
+  wordReplacements: WordReplacement[]
 }
 
 interface ViewextGeneratorProps {
   config: ViewextConfig
 }
 
-// 뷰익.html에서 추출한 정확한 컬러 테마 정의
-export const COLOR_THEMES = {
-  'oldmoney-normal': {
-    name: '올드머니 - 일반',
-    className: 'oldmoney-normal-char'
+// 프리셋 테마 정의
+export const PRESET_THEMES = {
+  'alternate-hunters': {
+    name: 'Alternate Hunters (기본)',
+    backgroundColor: 'radial-gradient(circle at 10% 20%, rgb(20, 30, 35) 20%, #0f1a20 70%)',
+    titleColor: '#b8a576',
+    textColor: '#b5a382',
+    borderColor: '#1c352d',
+    highlightBoxColor: 'rgba(107, 182, 255, 0.1)',
+    highlightBoxBorderColor: '#6bb6ff',
+    highlightBoxTextColor: '#6bb6ff',
+    dialogueBoxColor: 'rgba(138, 121, 93, 0.1)',
+    dialogueBoxBorderColor: '#8a795d',
+    dialogueBoxTextColor: '#f1c40f'
   },
-  'oldmoney-dark': {
-    name: '올드머니 - 다크',
-    className: 'oldmoney-dark-char'
+  'light-theme': {
+    name: '라이트 테마',
+    backgroundColor: 'radial-gradient(circle at 20% 30%, rgb(246, 242, 233) 20%, #f0e9d9 50%)',
+    titleColor: '#6b4c35',
+    textColor: '#61583f',
+    borderColor: '#2a3c2d',
+    highlightBoxColor: 'rgba(107, 182, 255, 0.1)',
+    highlightBoxBorderColor: '#6bb6ff',
+    highlightBoxTextColor: '#6bb6ff',
+    dialogueBoxColor: 'rgba(138, 121, 93, 0.1)',
+    dialogueBoxBorderColor: '#8a795d',
+    dialogueBoxTextColor: '#8b1a1a'
   },
-  'vintage-vanilla-light': {
-    name: '빈티지 바닐라 - 라이트',
-    className: 'vintage-vanilla-light'
-  },
-  'vintage-vanilla-dark': {
-    name: '빈티지 바닐라 - 다크',
-    className: 'vintage-vanilla-dark'
-  },
-  'carbonic-pure-light': {
-    name: '카보닉 퓨어 - 라이트',
-    className: 'carbonic-pure-light'
-  },
-  'carbonic-pure-dark': {
-    name: '카보닉 퓨어 - 다크',
-    className: 'carbonic-pure-dark'
-  },
-  'b5-white-navy-light': {
-    name: 'B5 화이트 & 네이비 - 라이트',
-    className: 'b5-white-navy-light'
-  },
-  'b5-white-navy-dark': {
-    name: 'B5 화이트 & 네이비 - 다크',
-    className: 'b5-white-navy-dark'
-  },
-  'spring-memory': {
-    name: '봄의 추억',
-    className: 'spring-memory'
-  },
-  'cyberpunk-theme': {
+  'cyberpunk': {
     name: '사이버펑크',
-    className: 'cyberpunk-theme'
+    backgroundColor: 'radial-gradient(circle at 10% 20%, #080C25 20%, #151425 70%)',
+    titleColor: '#FFFF00',
+    textColor: '#80E0FF',
+    borderColor: '#00D6FF',
+    highlightBoxColor: 'rgba(255, 0, 255, 0.1)',
+    highlightBoxBorderColor: '#FF00FF',
+    highlightBoxTextColor: '#FF00FF',
+    dialogueBoxColor: 'rgba(255, 255, 0, 0.1)',
+    dialogueBoxBorderColor: '#FFFF00',
+    dialogueBoxTextColor: '#FFFF00'
   },
-  'classic-ivory': {
-    name: '클래식 아이보리',
-    className: 'classic-ivory'
-  },
-  'metallic-gray': {
-    name: '메탈릭 그레이',
-    className: 'metallic-gray'
-  },
-  'baby-pink-light': {
-    name: '베이비 핑크 라이트',
-    className: 'baby-pink-light'
-  },
-  'luxury-gold': {
-    name: '럭셔리 골드',
-    className: 'luxury-gold'
-  },
-  'sports-blue': {
-    name: '스포츠 블루',
-    className: 'sports-blue'
+  'vintage': {
+    name: '빈티지',
+    backgroundColor: '#ddd6ce',
+    titleColor: '#3c676e',
+    textColor: '#948d85',
+    borderColor: '#948d85',
+    highlightBoxColor: 'rgba(60, 103, 110, 0.1)',
+    highlightBoxBorderColor: '#3c676e',
+    highlightBoxTextColor: '#3c676e',
+    dialogueBoxColor: 'rgba(197, 123, 100, 0.1)',
+    dialogueBoxBorderColor: '#c57b64',
+    dialogueBoxTextColor: '#c57b64'
   }
 }
 
@@ -94,259 +126,264 @@ export const FONT_OPTIONS = [
   { value: '나눔스퀘어네오', name: '나눔스퀘어네오' },
   { value: '에스코어드림', name: '에스코어드림' },
   { value: '레페리포인트', name: '레페리포인트' },
-  { value: '플렉스', name: 'IBM 플렉스' },
-  { value: '스위트', name: '스위트' },
-  { value: '오르빗', name: '오르빗' },
-  { value: '스쿨오르빗', name: '학교안심 우주' },
-  { value: '프리티나잇', name: '카페24 원나잇' },
-  { value: '서라운드에어', name: '카페24 서라운드' },
-  { value: '고운돋움', name: '고운돋움' },
-  { value: '고운바탕', name: '고운바탕' },
-  { value: '리디바탕', name: '리디바탕' },
-  { value: '마루부리', name: '마루부리' },
-  { value: '도스고딕', name: 'DOS고딕' },
-  { value: '스타더스트', name: '스타더스트' },
-  { value: '픽시드시스', name: '둥근모' },
-  { value: '네오둥근모', name: '네오둥근모' }
+  { value: 'IBM Plex Sans KR', name: 'IBM 플렉스' },
+  { value: 'Noto Sans KR', name: '노토 산스' },
+  { value: 'Spoqa Han Sans Neo', name: '스포카 한 산스' }
 ]
 
 export default function ViewextGenerator({ config }: ViewextGeneratorProps) {
-  const generateHTML = (): string => {
-    const theme = COLOR_THEMES[config.colorTheme as keyof typeof COLOR_THEMES] || COLOR_THEMES['oldmoney-normal']
-    
-    // 테마별 인라인 스타일 정의
-    const getThemeStyles = (themeKey: string) => {
-      const themes: { [key: string]: any } = {
-        'oldmoney-normal-char': {
-          background: 'radial-gradient(circle at 20% 30%, rgb(246, 242, 233) 20%, #f0e9d9 50%)',
-          headerColor: '#6b4c35',
-          textColor: '#61583f',
-          emColor: '#8b1a1a',
-          strongColor: '#2b3629',
-          borderColor: '#2a3c2d'
-        },
-        'oldmoney-dark-char': {
-          background: 'radial-gradient(circle at 10% 20%, rgb(20, 30, 35) 20%, #0f1a20 70%)',
-          headerColor: '#8a795d',
-          textColor: '#a08e6c',
-          emColor: '#aa7b5c',
-          strongColor: '#bf9f6f',
-          borderColor: '#1c352d'
-        },
-        'vintage-vanilla-light': {
-          background: '#ddd6ce',
-          headerColor: '#3c676e',
-          textColor: '#948d85',
-          emColor: '#c57b64',
-          strongColor: '#c57b64',
-          borderColor: '#948d85'
-        },
-        'vintage-vanilla-dark': {
-          background: '#49686d',
-          headerColor: '#ffe8d1',
-          textColor: '#b9af9e',
-          emColor: '#ffce83',
-          strongColor: '#ffce83',
-          borderColor: '#ffffff40'
-        },
-        'carbonic-pure-light': {
-          background: 'radial-gradient(#ececed, #cbc7c7)',
-          headerColor: '#333437',
-          textColor: '#707070',
-          emColor: '#57975c',
-          strongColor: '#57975c',
-          borderColor: '#858585'
-        },
-        'carbonic-pure-dark': {
-          background: 'radial-gradient(#252525, #202020)',
-          headerColor: '#f3f3f3',
-          textColor: '#959595',
-          emColor: '#ffaa80',
-          strongColor: '#ffaa80',
-          borderColor: '#898989'
-        },
-        'b5-white-navy-light': {
-          background: 'radial-gradient(circle at 20% 30%, rgb(251, 248, 239) 20%, #FFFFFF 50%)',
-          headerColor: '#2C3E50',
-          textColor: '#333333',
-          emColor: '#0d5977',
-          strongColor: '#34495E',
-          borderColor: '#BDC3C7'
-        },
-        'b5-white-navy-dark': {
-          background: 'radial-gradient(circle at 10% 20%, rgb(11, 25, 44) 20%, #1A1A1A 70%)',
-          headerColor: '#a1a1a1',
-          textColor: '#958b8b',
-          emColor: '#98925e',
-          strongColor: '#973131',
-          borderColor: '#481E14'
-        },
-        'spring-memory': {
-          background: 'linear-gradient(135deg, #FFF8F8 0%, #FFFFFF 100%)',
-          headerColor: '#FF8BA8',
-          textColor: '#333333',
-          emColor: '#FFB5C4',
-          strongColor: '#FF5F85',
-          borderColor: '#FFB5C4'
-        },
-        'cyberpunk-theme': {
-          background: 'radial-gradient(circle at 10% 20%, #080C25 20%, #151425 70%)',
-          headerColor: '#FFFF00',
-          textColor: '#80E0FF',
-          emColor: '#FF00FF',
-          strongColor: '#FFFF00',
-          borderColor: '#00D6FF'
-        },
-        'classic-ivory': {
-          background: 'linear-gradient(135deg, #b5b1a8 0%, #F8F6F0 10%, #F8F6F0 50%, #E5E1D4 80%, #b5b1a8 100%)',
-          headerColor: '#5A5445',
-          textColor: '#5A5649',
-          emColor: '#5A5445',
-          strongColor: '#5A5445',
-          borderColor: '#5A5445'
-        },
-        'metallic-gray': {
-          background: 'radial-gradient(circle at center, #222222 0%, #1A1A1A 70%, #161616 100%)',
-          headerColor: '#DDDDDD',
-          textColor: '#A0A0A0',
-          emColor: '#DDDDDD',
-          strongColor: '#DDDDDD',
-          borderColor: '#898989'
-        },
-        'baby-pink-light': {
-          background: 'linear-gradient(135deg, #f5ebff 0%, #ffecf5 25%, #fffbe8 80%, #fffbe8 100%)',
-          headerColor: '#ffb6c1',
-          textColor: '#86777b',
-          emColor: '#ffb6c1',
-          strongColor: '#ffb6c1',
-          borderColor: '#ffb6c1'
-        },
-        'luxury-gold': {
-          background: 'radial-gradient(circle at center, #272420 0%, #201d18 70%, #1a1814 100%)',
-          headerColor: '#ffd700',
-          textColor: '#b3a989',
-          emColor: '#ffd700',
-          strongColor: '#ffd700',
-          borderColor: '#ffd700'
-        },
-        'sports-blue': {
-          background: 'linear-gradient(135deg, #12285A 0%, #081224 100%)',
-          headerColor: '#FFB829',
-          textColor: '#DCD5BE',
-          emColor: '#FFB829',
-          strongColor: '#FFB829',
-          borderColor: '#FFB829'
-        }
-      }
-      
-      return themes[themeKey] || themes['oldmoney-normal-char']
-    }
-
-    // 이미지 URL 정규화 (배너형 생성기에서 가져옴)
-    const normalizeImageUrl = (url: string) => {
-      if (!url) return ''
-      if (url.startsWith('//')) {
-        return 'https:' + url
-      }
-      if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
-        return 'https://' + url
-      }
+  
+  // 이미지 URL 정규화 (배너형 생성기에서 이식)
+  const normalizeImageUrl = (url: string) => {
+    if (!url) return ''
+    // 데이터 URL (base64)은 그대로 사용
+    if (url.startsWith('data:')) {
       return url
     }
-
-    // 메시지 박스 생성 함수
-    const createMessageBox = (speakerName: string, message: string, themeStyle: any, imageUrl?: string) => {
-      const processedMessage = processTextFormatting(message, themeStyle)
-      const finalImageUrl = normalizeImageUrl(imageUrl || '')
-      
-      // 가로형 레이아웃 (이미지 포함)
-      if (config.layoutType === 'horizontal' && config.showImages && finalImageUrl) {
-        return `
-<div style="margin: 1rem auto 0.5rem auto; padding: 1rem 2rem 0.1rem 2rem; max-width: 55rem; border-radius: 1rem; box-shadow: 0 0 2rem rgba(0, 0, 0, 0.25); background: ${themeStyle.background}; line-height: 1.5; font-family: '${config.fontFamily}', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: ${config.letterSpacing}rem;">
-  <div style="margin: 0 auto 0.7rem auto; text-align: center;">
-    <div style="margin-bottom: 1rem;">
-      <span style="background: ${themeStyle.background}; padding: 0 1.5rem; font-size: 1.2rem; font-weight: bold; color: ${themeStyle.headerColor}; text-transform: uppercase; letter-spacing: 5px;">${speakerName}</span>
-    </div>
-    <div style="border-top: 1px solid ${themeStyle.borderColor}; width: 100%; margin-top: -0.8rem;"></div>
-  </div>
-  
-  <!-- 가로형 레이아웃: 이미지 + 텍스트 -->
-  <div style="display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 1rem;">
-    <!-- 좌측 이미지 -->
-    <div style="flex-shrink: 0;">
-      <img src="${finalImageUrl}" style="width: 120px; height: 120px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" alt="${speakerName}">
-    </div>
-    
-    <!-- 구분선 -->
-    <div style="width: 1px; background: ${themeStyle.borderColor}; flex-shrink: 0; align-self: stretch; margin: 0.5rem 0;"></div>
-    
-    <!-- 우측 텍스트 -->
-    <div style="flex: 1; padding: 0 0.7rem;">
-      <p style="color: ${themeStyle.textColor}; margin: 0.5rem 0;">${processedMessage}</p>
-    </div>
-  </div>
-</div>`
+    // 아카라이브 이미지 URL (//ac-p1.namu.la 또는 //ac.namu.la)은 원본 형태 유지
+    if (url.startsWith('//') && (url.includes('ac-p1.namu.la') || url.includes('ac.namu.la'))) {
+      return url  // 아카라이브 URL은 원본 형태 그대로 사용
+    }
+    // 기타 절대 URL (//로 시작)은 https 프로토콜 추가
+    if (url.startsWith('//')) {
+      return 'https:' + url
+    }
+    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
+    if (url.startsWith('/uploads/')) {
+      // 개발환경에서는 localhost 사용
+      if (typeof window !== 'undefined') {
+        return window.location.protocol + '//' + window.location.host + url
       }
-      
-      // 세로형 레이아웃 (기본)
-      return `
-<div style="margin: 1rem auto 0.5rem auto; padding: 1rem 2rem 0.1rem 2rem; max-width: 55rem; border-radius: 1rem; box-shadow: 0 0 2rem rgba(0, 0, 0, 0.25); background: ${themeStyle.background}; line-height: 1.5; font-family: '${config.fontFamily}', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: ${config.letterSpacing}rem;">
-  <div style="margin: 0 auto 0.7rem auto; text-align: center;">
-    <div style="margin-bottom: 1rem;">
-      <span style="background: ${themeStyle.background}; padding: 0 1.5rem; font-size: 1.2rem; font-weight: bold; color: ${themeStyle.headerColor}; text-transform: uppercase; letter-spacing: 5px;">${speakerName}</span>
-    </div>
-    <div style="border-top: 1px solid ${themeStyle.borderColor}; width: 100%; margin-top: -0.8rem;"></div>
-  </div>
-  <div style="margin-bottom: 1rem; padding: 0 0.7rem;">
-    <p style="color: ${themeStyle.textColor}; margin: 0.5rem 0;">${processedMessage}</p>
-  </div>
-</div>`
+      return 'http://localhost:3000' + url
     }
+    // http/https가 없으면 https 추가
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return 'https://' + url
+    }
+    return url
+  }
 
-    // 텍스트 파싱 및 HTML 생성 (인라인 스타일 적용)
-    const parseContent = () => {
-      const lines = config.content.split('\n').filter(line => line.trim())
-      let html = ''
-      const themeStyle = getThemeStyles(theme.className)
-      
-      for (const line of lines) {
-        const trimmedLine = line.trim()
-        
-        // 캐릭터 메시지 감지
-        if (trimmedLine.startsWith(`${config.characterName}:`)) {
-          const message = trimmedLine.substring(config.characterName.length + 1).trim()
-          html += createMessageBox(config.characterName, message, themeStyle, config.characterImageUrl)
-        }
-        // 사용자 메시지 감지
-        else if (trimmedLine.startsWith(`${config.userName}:`)) {
-          const message = trimmedLine.substring(config.userName.length + 1).trim()
-          html += createMessageBox(config.userName, message, themeStyle, config.userImageUrl)
-        }
-        // 일반 텍스트 (이전 메시지에 추가)
-        else if (trimmedLine) {
-          const processedMessage = processTextFormatting(trimmedLine, themeStyle)
-          html += `<p style="color: ${themeStyle.textColor}; margin: 0.5rem 0;">${processedMessage}</p>`
-        }
+  // 미리보기용 이미지 URL 생성 (CORS 우회를 위한 프록시 사용)
+  const getPreviewImageUrl = (url: string): string => {
+    const normalizedUrl = normalizeImageUrl(url);
+    
+    // 데이터 URL (base64)은 그대로 사용
+    if (normalizedUrl.startsWith('data:')) {
+      return normalizedUrl;
+    }
+    
+    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
+    if (normalizedUrl.includes('/uploads/')) {
+      return normalizedUrl;
+    }
+    
+    // 아카라이브 이미지인 경우 프록시를 통해 로드
+    if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
+      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
+      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
+    }
+    
+    // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
+    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+  };
+
+  // 단어 변환 기능 (제리형에서 이식)
+  const applyWordReplacements = (text: string) => {
+    let processedText = text
+    config.wordReplacements.forEach(replacement => {
+      if (replacement.from && replacement.to) {
+        processedText = processedText.replace(new RegExp(replacement.from, 'g'), replacement.to)
       }
-      
-      return html
+    })
+    return processedText
+  }
+
+  // 텍스트 포맷팅 처리
+  const processTextFormatting = (text: string): string => {
+    let result = text;
+    
+    // 임시 플레이스홀더를 사용하여 충돌 방지
+    const SINGLE_QUOTE_PLACEHOLDER = '___SINGLE_QUOTE_PLACEHOLDER___';
+    const DOUBLE_QUOTE_PLACEHOLDER = '___DOUBLE_QUOTE_PLACEHOLDER___';
+    
+    // 1. 작은따옴표 처리: '텍스트' → 임시 플레이스홀더로 변환
+    result = result.replace(/'([^']+)'/g, `${SINGLE_QUOTE_PLACEHOLDER}$1${SINGLE_QUOTE_PLACEHOLDER}`);
+    
+    // 2. 큰따옴표 처리: "텍스트" → 임시 플레이스홀더로 변환
+    result = result.replace(/"([^"]+)"/g, `${DOUBLE_QUOTE_PLACEHOLDER}$1${DOUBLE_QUOTE_PLACEHOLDER}`);
+    
+    // 3. 임시 플레이스홀더를 실제 HTML로 변환 (큰따옴표 방식과 동일하게 따옴표 유지)
+    result = result.replace(new RegExp(`${SINGLE_QUOTE_PLACEHOLDER}([^${SINGLE_QUOTE_PLACEHOLDER}]+)${SINGLE_QUOTE_PLACEHOLDER}`, 'g'), 
+      `<span style="background:${config.highlightBoxColor};border-left:3px solid ${config.highlightBoxBorderColor};padding:0.3rem 0.8rem;border-radius:0 0.4rem 0.4rem 0;display:inline-block;color:${config.highlightBoxTextColor};font-weight:bold;">'$1'</span>`);
+    
+    result = result.replace(new RegExp(`${DOUBLE_QUOTE_PLACEHOLDER}([^${DOUBLE_QUOTE_PLACEHOLDER}]+)${DOUBLE_QUOTE_PLACEHOLDER}`, 'g'), 
+      `<span style="background:${config.dialogueBoxColor};border-left:3px solid ${config.dialogueBoxBorderColor};padding:0.5rem 1rem;border-radius:0 0.5rem 0.5rem 0;display:inline-block;color:${config.dialogueBoxTextColor};font-weight:bold;">"$1"</span>`);
+    
+    // 4. 볼드 처리: **텍스트**
+    result = result.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight:bold;">$1</strong>');
+    
+    // 5. 이탤릭 처리: *텍스트*
+    result = result.replace(/\*(.*?)\*/g, '<em style="font-style:italic;">$1</em>');
+    
+    return result;
+  }
+
+  // HTML 생성 함수
+  const generateHTML = (): string => {
+    const finalImageUrl = normalizeImageUrl(config.mainImageUrl)
+    
+    // 단어 변환 적용
+    const processedContent = applyWordReplacements(config.content)
+    
+    // 콘텐츠를 줄바꿈 기준으로 처리 (원문의 줄바꿈 유지)
+    const lines = processedContent.split('\n')
+    
+    // 줄들을 HTML로 변환
+    const contentHTML = lines.map(line => {
+      if (line.trim() === '') {
+        // 빈 줄은 빈 문자열로 처리 (join에서 <br>이 추가됨)
+        return ''
+      } else {
+        // 텍스트가 있는 줄은 포맷팅 적용
+        const processedText = processTextFormatting(line.trim())
+        return `<span style="color:${config.textColor};font-size:${config.fontSize}px;line-height:${config.lineHeight};">${processedText}</span>`
+      }
+    }).join('<br>\n\t\t')
+
+    // 패딩과 그림자 CSS 생성
+    const paddingCSS = `${config.paddingTop}rem ${config.paddingRight}rem ${config.paddingBottom}rem ${config.paddingLeft}rem`
+    const shadowCSS = `0 0 ${config.shadowBlur}rem ${config.shadowSpread}rem rgba(0, 0, 0, 0.25)`
+
+    // 메인 HTML 구조 생성
+    const html = `
+<p><br></p>
+<p><br></p>
+
+<div style="margin:1rem auto 0.5rem auto;padding:${paddingCSS};max-width:${config.maxWidth}rem;border-radius:${config.borderRadius}rem;box-shadow:${shadowCSS};background:${config.backgroundColor};line-height:${config.lineHeight};font-family:'${config.fontFamily}', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;letter-spacing:${config.letterSpacing}rem;">
+\t<div style="margin:0 auto 0.7rem auto;text-align:center;">
+\t\t<div style="margin-bottom:1rem;">
+\t\t\t<span style="background:${config.backgroundColor};padding:0 1.5rem;font-size:1.2rem;font-weight:bold;color:${config.titleColor};text-transform:uppercase;letter-spacing:5px;">${config.title}</span>
+\t\t</div>
+\t\t<div style="border-top:1px solid ${config.borderColor};width:100%;margin-top:-0.8rem;">
+\t\t\t<br>
+\t\t</div>
+\t</div>
+\t
+${config.showMainImage && finalImageUrl ? `\t<div style="margin-bottom:1rem;padding:0 0.7rem;text-align:center;">
+\t\t<div style="max-width:${config.imageMaxWidth}px;margin:0 auto;">
+\t\t\t<img style="max-width:100%;border-radius:12px;" src="${finalImageUrl}" alt="main-image" class="fr-fic fr-dii">
+\t\t</div>
+\t</div>
+\t
+` : ''}\t<div style="margin:1rem 0.7rem;display:flex;">
+\t\t<div style="height:1px;background:linear-gradient(to right, transparent, #d4af37);">
+\t\t\t<br>
+\t\t</div>
+\t\t<div style="width:20px;">
+\t\t\t<br>
+\t\t</div>
+\t\t<div style="height:1px;background:linear-gradient(to left, transparent, #d4af37);">
+\t\t\t<br>
+\t\t</div>
+\t</div>
+\t
+\t<div style="margin-bottom:1.5rem;padding:0 0.7rem;">
+\t\t${contentHTML}
+\t</div>
+\t
+\t<div style="margin:0.5rem 0.7rem 0.2rem 0.7rem;padding-top:0.8rem;border-top:1px solid ${config.borderColor};text-align:center;">
+\t\t<br>
+\t</div>
+</div>
+
+<p><br></p>
+<p><br></p>`
+
+    // 커스텀 CSS가 활성화된 경우 추가
+    if (config.enableCustomCSS && config.customCSS) {
+      return `<style>\n${config.customCSS}\n</style>\n\n${html}`
     }
 
-    // 텍스트 포맷팅 처리 (볼드, 이탤릭 등) - 인라인 스타일 적용
-    const processTextFormatting = (text: string, themeStyle: any): string => {
-      return text
-        .replace(/\*\*(.*?)\*\*/g, `<strong style="color: ${themeStyle.strongColor}; font-weight: bold;">$1</strong>`)  // **볼드**
-        .replace(/\*(.*?)\*/g, `<em style="color: ${themeStyle.emColor}; font-weight: 500; font-style: italic;">$1</em>`)              // *이탤릭*
-        .replace(/__(.*?)__/g, `<strong style="color: ${themeStyle.strongColor}; font-weight: bold;">$1</strong>`)      // __볼드__
-        .replace(/_(.*?)_/g, `<em style="color: ${themeStyle.emColor}; font-weight: 500; font-style: italic;">$1</em>`)                // _이탤릭_
+    return html
+  }
+
+  // 미리보기용 HTML 생성 함수 (iframe 없이 직접 렌더링용)
+  const generatePreviewHTML = (): string => {
+    const finalImageUrl = getPreviewImageUrl(config.mainImageUrl)
+    
+    // 단어 변환 적용
+    const processedContent = applyWordReplacements(config.content)
+    
+    // 콘텐츠를 줄바꿈 기준으로 처리 (원문의 줄바꿈 유지)
+    const lines = processedContent.split('\n')
+    
+    // 줄들을 HTML로 변환
+    const contentHTML = lines.map(line => {
+      if (line.trim() === '') {
+        // 빈 줄은 빈 문자열로 처리 (join에서 <br>이 추가됨)
+        return ''
+      } else {
+        // 텍스트가 있는 줄은 포맷팅 적용
+        const processedText = processTextFormatting(line.trim())
+        return `<span style="color:${config.textColor};font-size:${config.fontSize}px;line-height:${config.lineHeight};">${processedText}</span>`
+      }
+    }).join('<br>\n\t\t')
+
+    // 패딩과 그림자 CSS 생성
+    const paddingCSS = `${config.paddingTop}rem ${config.paddingRight}rem ${config.paddingBottom}rem ${config.paddingLeft}rem`
+    const shadowCSS = `0 0 ${config.shadowBlur}rem ${config.shadowSpread}rem rgba(0, 0, 0, 0.25)`
+
+    // 미리보기용 HTML 구조 생성 (p 태그 제거하고 div만 사용)
+    const html = `
+<div style="margin:1rem auto 0.5rem auto;padding:${paddingCSS};max-width:${config.maxWidth}rem;border-radius:${config.borderRadius}rem;box-shadow:${shadowCSS};background:${config.backgroundColor};line-height:${config.lineHeight};font-family:'${config.fontFamily}', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;letter-spacing:${config.letterSpacing}rem;">
+\t<div style="margin:0 auto 0.7rem auto;text-align:center;">
+\t\t<div style="margin-bottom:1rem;">
+\t\t\t<span style="background:${config.backgroundColor};padding:0 1.5rem;font-size:1.2rem;font-weight:bold;color:${config.titleColor};text-transform:uppercase;letter-spacing:5px;">${config.title}</span>
+\t\t</div>
+\t\t<div style="border-top:1px solid ${config.borderColor};width:100%;margin-top:-0.8rem;">
+\t\t\t<br>
+\t\t</div>
+\t</div>
+\t
+${config.showMainImage && finalImageUrl ? `\t<div style="margin-bottom:1rem;padding:0 0.7rem;text-align:center;">
+\t\t<div style="max-width:${config.imageMaxWidth}px;margin:0 auto;">
+\t\t\t<img style="max-width:100%;border-radius:12px;" src="${finalImageUrl}" alt="main-image">
+\t\t</div>
+\t</div>
+\t
+` : ''}\t<div style="margin:1rem 0.7rem;display:flex;">
+\t\t<div style="height:1px;background:linear-gradient(to right, transparent, #d4af37);">
+\t\t\t<br>
+\t\t</div>
+\t\t<div style="width:20px;">
+\t\t\t<br>
+\t\t</div>
+\t\t<div style="height:1px;background:linear-gradient(to left, transparent, #d4af37);">
+\t\t\t<br>
+\t\t</div>
+\t</div>
+\t
+\t<div style="margin-bottom:1.5rem;padding:0 0.7rem;">
+\t\t${contentHTML}
+\t</div>
+\t
+\t<div style="margin:0.5rem 0.7rem 0.2rem 0.7rem;padding-top:0.8rem;border-top:1px solid ${config.borderColor};text-align:center;">
+\t\t<br>
+\t</div>
+</div>`
+
+    // 커스텀 CSS가 활성화된 경우 추가
+    if (config.enableCustomCSS && config.customCSS) {
+      return `<style>\n${config.customCSS}\n</style>\n\n${html}`
     }
 
-    // 최종 HTML 생성 (인라인 스타일만 사용) - 외부 컨테이너 제거
-    return parseContent()
+    return html
   }
 
   return {
-    generateHTML
+    generateHTML,
+    generatePreviewHTML
   }
 }
 

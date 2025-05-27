@@ -132,6 +132,23 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [undo, redo]);
 
+  // 단어 변환 기능 (제리형에서 이식)
+  const handleWordReplacementChange = (index: number, field: string, value: string) => {
+    const newReplacements = [...config.wordReplacements];
+    newReplacements[index][field as keyof typeof newReplacements[0]] = value;
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const addWordReplacement = () => {
+    const newReplacements = [...config.wordReplacements, { from: '', to: '' }];
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const removeWordReplacement = (index: number) => {
+    const newReplacements = config.wordReplacements.filter((_, i) => i !== index);
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
   // 텍스트가 이미 특정 스타일로 감싸져 있는지 확인하는 함수
   const isTextWrapped = (text: string, prefix: string, suffix: string) => {
     return text.startsWith(prefix) && text.endsWith(suffix);
@@ -667,10 +684,60 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
                 label="내부 여백 (rem)"
               />
             </ModernFormGroup>
-          </ModernSection>
+                  </ModernSection>
 
-          {/* 텍스트 편집 도구 */}
-          <ModernSection title="✏️ 텍스트 편집 도구">
+        {/* 단어 변환 기능 (제리형에서 이식) */}
+        <ModernSection title="🔄 단어 변환">
+          <ModernHint>
+            <p><strong>💡 사용법:</strong></p>
+            <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
+            <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
+            <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
+          </ModernHint>
+          {config.wordReplacements.map((replacement, index) => (
+            <div key={index} style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              alignItems: 'center', 
+              marginBottom: '12px',
+              padding: '12px',
+              backgroundColor: 'var(--surface)',
+              borderRadius: '8px',
+              border: '1px solid var(--border)'
+            }}>
+              <ModernInput
+                value={replacement.from}
+                onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                placeholder="변경할 단어"
+              />
+              <span style={{ 
+                fontSize: '18px', 
+                color: 'var(--text-secondary)',
+                fontWeight: 'bold'
+              }}>→</span>
+              <ModernInput
+                value={replacement.to}
+                onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                placeholder="대체할 단어"
+              />
+              <ModernButton
+                danger
+                onClick={() => removeWordReplacement(index)}
+                style={{ padding: '8px 12px', fontSize: '12px' }}
+              >
+                삭제
+              </ModernButton>
+            </div>
+          ))}
+          <ModernFormGroup>
+            <ModernButton onClick={addWordReplacement}>
+              + 단어 변환 추가
+            </ModernButton>
+          </ModernFormGroup>
+        </ModernSection>
+
+        {/* 텍스트 편집 도구 */}
+        <ModernSection title="✏️ 텍스트 편집 도구">
             <ModernFormGroup label="실행취소/다시실행">
               <ModernFormRow>
                 <ModernFormGroup>
@@ -768,7 +835,7 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
               </ModernFormGroup>
               <ModernFormGroup>
                 <ModernButton onClick={onCopyHTML}>
-                  📋 복사
+                  ✨ 스타일 복사 (고급)
                 </ModernButton>
               </ModernFormGroup>
               <ModernFormGroup>
@@ -777,6 +844,10 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
                 </ModernButton>
               </ModernFormGroup>
             </ModernFormRow>
+            
+            <ModernHint>
+              💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
+            </ModernHint>
           </ModernSection>
         </div>
 

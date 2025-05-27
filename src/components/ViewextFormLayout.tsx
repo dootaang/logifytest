@@ -13,22 +13,63 @@ import {
   ModernSelect,
   ModernToggle
 } from './ModernComponents'
-import ViewextGenerator, { COLOR_THEMES, FONT_OPTIONS } from './ViewextGenerator'
+import { PRESET_THEMES, FONT_OPTIONS } from './ViewextGenerator'
+import ViewextGenerator from './ViewextGenerator'
+
+interface WordReplacement {
+  from: string;
+  to: string;
+}
 
 interface ViewextConfig {
+  // 기본 콘텐츠
   content: string;
-  characterName: string;
-  userName: string;
-  colorTheme: string;
-  layoutType: 'vertical' | 'horizontal';
-  showImages: boolean;
+  title: string;
+  
+  // 이미지 설정
+  mainImageUrl: string;
+  showMainImage: boolean;
+  imageMaxWidth: number;
+  
+  // 색상 및 스타일 설정
+  backgroundColor: string;
+  backgroundGradient: string;
+  titleColor: string;
+  textColor: string;
+  borderColor: string;
+  
+  // 하이라이트 박스 설정
+  highlightBoxColor: string;
+  highlightBoxBorderColor: string;
+  highlightBoxTextColor: string;
+  
+  // 대화 박스 설정
+  dialogueBoxColor: string;
+  dialogueBoxBorderColor: string;
+  dialogueBoxTextColor: string;
+  
+  // 폰트 설정
   fontFamily: string;
-  letterSpacing: number;
+  fontSize: number;
   lineHeight: number;
-  enableScroll: boolean;
-  enableFoldToggle: boolean;
-  characterImageUrl: string;
-  userImageUrl: string;
+  letterSpacing: number;
+  
+  // 레이아웃 설정
+  maxWidth: number;
+  paddingTop: number;
+  paddingRight: number;
+  paddingBottom: number;
+  paddingLeft: number;
+  borderRadius: number;
+  shadowBlur: number;
+  shadowSpread: number;
+  
+  // 고급 설정
+  enableCustomCSS: boolean;
+  customCSS: string;
+  
+  // 단어 변환 기능
+  wordReplacements: WordReplacement[];
 }
 
 interface ViewextFormLayoutProps {
@@ -49,12 +90,141 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
   onReset
 }) => {
   const [activeTab, setActiveTab] = useState('basic');
+  const [selectedPreset, setSelectedPreset] = useState('alternate-hunters');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
+
+  // 다크모드 감지
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setIsDarkMode(darkModeQuery.matches);
+    };
+
+    checkDarkMode();
+    const darkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    darkModeQuery.addEventListener('change', checkDarkMode);
+
+    return () => darkModeQuery.removeEventListener('change', checkDarkMode);
+  }, []);
 
   const handleInputChange = (field: string, value: any) => {
     onConfigChange({ [field]: value });
   };
 
-  const colorThemeOptions = Object.entries(COLOR_THEMES).map(([key, theme]) => ({
+  // 이미지 업로드 핸들러 (배너형 생성기에서 이식)
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadStatus('❌ 파일 크기가 5MB를 초과합니다.');
+      return;
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      setUploadStatus('❌ 이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setUploadStatus('⏳ 업로드 중...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        handleInputChange('mainImageUrl', data.url);
+        if (data.isDataUrl) {
+          setUploadStatus('✅ 업로드 성공! (base64 변환됨)');
+        } else {
+          setUploadStatus('✅ 업로드 성공!');
+        }
+        
+        // 3초 후 상태 메시지 제거
+        setTimeout(() => setUploadStatus(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setUploadStatus(`❌ 업로드 실패: ${errorData.error || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('업로드 오류:', error);
+      setUploadStatus('❌ 업로드 중 오류가 발생했습니다.');
+    }
+  };
+
+  // HTML에서 이미지 URL 추출하는 함수 (배너형 생성기에서 이식)
+  const extractImageUrlFromHtml = (htmlString: string) => {
+    const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/i;
+    const match = htmlString.match(imgTagRegex);
+    
+    if (match && match[1]) {
+      return match[1];
+    }
+    
+    return htmlString;
+  };
+
+  // 입력값이 HTML인지 확인하는 함수 (배너형 생성기에서 이식)
+  const isHtmlImageTag = (input: string) => {
+    return input.includes('<img') && input.includes('src=');
+  };
+
+  // 이미지 URL 변경 핸들러 (HTML 자동 추출 포함)
+  const handleImageUrlChange = (value: string) => {
+    // 이미지 URL 필드에서 HTML 코드 자동 추출
+    if (typeof value === 'string' && isHtmlImageTag(value)) {
+      value = extractImageUrlFromHtml(value);
+    }
+    handleInputChange('mainImageUrl', value);
+  };
+
+  // 단어 변환 기능 (제리형에서 이식)
+  const handleWordReplacementChange = (index: number, field: string, value: string) => {
+    const newReplacements = [...config.wordReplacements];
+    newReplacements[index][field as keyof typeof newReplacements[0]] = value;
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const addWordReplacement = () => {
+    const newReplacements = [...config.wordReplacements, { from: '', to: '' }];
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const removeWordReplacement = (index: number) => {
+    const newReplacements = config.wordReplacements.filter((_, i) => i !== index);
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  // 프리셋 테마 적용
+  const applyPresetTheme = (presetKey: string) => {
+    const preset = PRESET_THEMES[presetKey as keyof typeof PRESET_THEMES];
+    if (preset) {
+      onConfigChange({
+        backgroundColor: preset.backgroundColor,
+        titleColor: preset.titleColor,
+        textColor: preset.textColor,
+        borderColor: preset.borderColor,
+        highlightBoxColor: preset.highlightBoxColor,
+        highlightBoxBorderColor: preset.highlightBoxBorderColor,
+        highlightBoxTextColor: preset.highlightBoxTextColor,
+        dialogueBoxColor: preset.dialogueBoxColor,
+        dialogueBoxBorderColor: preset.dialogueBoxBorderColor,
+        dialogueBoxTextColor: preset.dialogueBoxTextColor
+      });
+      setSelectedPreset(presetKey);
+    }
+  };
+
+  const presetOptions = Object.entries(PRESET_THEMES).map(([key, theme]) => ({
     value: key,
     label: theme.name
   }));
@@ -69,11 +239,20 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `뷰익형-${config.colorTheme}-${Date.now()}.html`;
+    a.download = `뷰익형-${config.title.replace(/\s+/g, '-')}-${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // 미리보기용 HTML 생성 함수 (배너형 생성기 방식 모방)
+  const generatePreviewHTML = () => {
+    if (config.content) {
+      const generator = ViewextGenerator({ config });
+      return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML();
+    }
+    return '';
   };
 
   return (
@@ -82,21 +261,33 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
         {/* 설정 패널 */}
         <div className="settings-panel">
           <div className="panel-header">
-            <h2>설정</h2>
+            <div className="header-content">
+              <div className="header-text">
+                <h2>커스텀 설정</h2>
+                <p className="panel-description">제공된 HTML 구조에 맞춘 새로운 뷰익형 생성기</p>
+              </div>
+              <div className="header-actions">
+                <ModernButton onClick={onCopyHTML} primary>
+                  📋 클립보드에 복사
+                </ModernButton>
+              </div>
+            </div>
           </div>
 
           {/* 탭 네비게이션 */}
           <div className="tab-navigation">
             {[
-              { id: 'basic', label: '기본 설정' },
-              { id: 'style', label: '스타일' },
-              { id: 'advanced', label: '고급 설정' }
+              { id: 'basic', label: '기본 설정', icon: '📝' },
+              { id: 'style', label: '스타일', icon: '🎨' },
+              { id: 'colors', label: '색상', icon: '🌈' },
+              { id: 'advanced', label: '고급', icon: '⚙️' }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
               >
+                <span className="tab-icon">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -107,68 +298,190 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
             {activeTab === 'basic' && (
               <div className="tab-panel">
                 <ModernSection title="기본 정보">
-                  <ModernFormRow>
-                    <ModernFormGroup label="캐릭터 이름">
-                      <ModernInput
-                        value={config.characterName}
-                        onChange={(value) => handleInputChange('characterName', value)}
-                        placeholder="Character"
-                      />
-                    </ModernFormGroup>
-                    <ModernFormGroup label="유저 이름">
-                      <ModernInput
-                        value={config.userName}
-                        onChange={(value) => handleInputChange('userName', value)}
-                        placeholder="User"
-                      />
-                    </ModernFormGroup>
-                  </ModernFormRow>
+                  <ModernFormGroup label="제목">
+                    <ModernInput
+                      value={config.title}
+                      onChange={(value) => handleInputChange('title', value)}
+                      placeholder="ALTERNATE HUNTERS"
+                    />
+                    <ModernHint>
+                      상단에 표시될 제목 (대문자로 변환됨)
+                    </ModernHint>
+                  </ModernFormGroup>
                 </ModernSection>
 
-                <ModernSection title="대화 내용">
+                <ModernSection title="콘텐츠">
                   <ModernFormGroup>
                     <ModernTextarea
                       value={config.content}
                       onChange={(value) => handleInputChange('content', value)}
-                      placeholder="Character: 안녕하세요!&#10;&#10;User: 안녕하세요!"
-                      rows={12}
+                      placeholder="서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다.
+
+당신은 '등록 및 초기 측정'라고 표시된 접수처 앞에 섰다.
+
+&quot;헌터 협회에 오신 것을 환영합니다.&quot;"
+                      rows={15}
                     />
                     <ModernHint>
-                      캐릭터명: 또는 유저명: 으로 시작하는 줄로 화자를 구분합니다.
+                      • 문단 구분: 빈 줄로 구분<br/>
+                      • 파란색 강조: '작은따옴표' 사용<br/>
+                      • 노란색 대화: "큰따옴표" 사용<br/>
+                      • 볼드: **텍스트**, 이탤릭: *텍스트*
                     </ModernHint>
+                  </ModernFormGroup>
+                </ModernSection>
+
+                {/* 단어 변환 기능 (제리형에서 이식) */}
+                <ModernSection title="🔄 단어 변환">
+                  <ModernHint>
+                    <p><strong>💡 사용법:</strong></p>
+                    <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
+                    <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
+                    <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
+                  </ModernHint>
+                  {config.wordReplacements.map((replacement, index) => (
+                    <div key={index} style={{ 
+                      display: 'flex', 
+                      gap: '12px', 
+                      alignItems: 'center', 
+                      marginBottom: '12px',
+                      padding: '12px',
+                      backgroundColor: 'var(--surface)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)'
+                    }}>
+                      <ModernInput
+                        value={replacement.from}
+                        onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                        placeholder="변경할 단어"
+                      />
+                      <span style={{ 
+                        fontSize: '18px', 
+                        color: 'var(--text-secondary)',
+                        fontWeight: 'bold'
+                      }}>→</span>
+                      <ModernInput
+                        value={replacement.to}
+                        onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                        placeholder="대체할 단어"
+                      />
+                      <ModernButton
+                        danger
+                        onClick={() => removeWordReplacement(index)}
+                        style={{ padding: '8px 12px', fontSize: '12px' }}
+                      >
+                        삭제
+                      </ModernButton>
+                    </div>
+                  ))}
+                  <ModernFormGroup>
+                    <ModernButton onClick={addWordReplacement}>
+                      + 단어 변환 추가
+                    </ModernButton>
                   </ModernFormGroup>
                 </ModernSection>
 
                 <ModernSection title="이미지 설정">
                   <ModernFormRow>
-                    <ModernFormGroup label="이미지 표시">
+                    <ModernFormGroup label="메인 이미지 표시">
                       <ModernToggle
-                        checked={config.showImages}
-                        onChange={(checked) => handleInputChange('showImages', checked)}
+                        checked={config.showMainImage}
+                        onChange={(checked) => handleInputChange('showMainImage', checked)}
                       />
-                      <ModernHint>
-                        좌측에 이미지 표시 여부
-                      </ModernHint>
                     </ModernFormGroup>
                   </ModernFormRow>
                   
-                  {config.showImages && (
-                    <ModernFormRow>
-                      <ModernFormGroup label="캐릭터 이미지 URL">
-                        <ModernInput
-                          value={config.characterImageUrl}
-                          onChange={(value) => handleInputChange('characterImageUrl', value)}
-                          placeholder="https://example.com/character.jpg"
-                        />
+                  {config.showMainImage && (
+                    <>
+                      {/* 로컬 이미지 업로드 섹션 (배너형 생성기에서 이식) */}
+                      <ModernFormGroup label="🖼️ 로컬 이미지 업로드">
+                        <div style={{
+                          border: '2px dashed #cbd5e0',
+                          borderRadius: '8px',
+                          padding: '20px',
+                          textAlign: 'center',
+                          backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ display: 'none' }}
+                            id="viewext-image-upload"
+                          />
+                          
+                          <label
+                            htmlFor="viewext-image-upload"
+                            style={{
+                              cursor: 'pointer',
+                              display: 'block'
+                            }}
+                          >
+                            <div style={{
+                              fontSize: '48px',
+                              marginBottom: '10px',
+                              color: isDarkMode ? '#a0aec0' : '#718096'
+                            }}>
+                              📁
+                            </div>
+                            <p style={{
+                              margin: '0 0 5px 0',
+                              fontWeight: 'bold',
+                              color: isDarkMode ? '#e2e8f0' : '#2d3748'
+                            }}>
+                              클릭하여 이미지 선택
+                            </p>
+                            <p style={{
+                              margin: 0,
+                              fontSize: '14px',
+                              color: isDarkMode ? '#a0aec0' : '#718096'
+                            }}>
+                              JPG, PNG, GIF 파일 지원 (최대 5MB)
+                            </p>
+                          </label>
+                        </div>
+                        {uploadStatus && (
+                          <div style={{
+                            marginTop: '10px',
+                            padding: '10px',
+                            borderRadius: '6px',
+                            backgroundColor: uploadStatus.includes('성공') ? '#c6f6d5' : '#fed7d7',
+                            color: uploadStatus.includes('성공') ? '#2f855a' : '#c53030',
+                            fontSize: '14px'
+                          }}>
+                            {uploadStatus}
+                          </div>
+                        )}
                       </ModernFormGroup>
-                      <ModernFormGroup label="유저 이미지 URL">
+
+                      {/* 외부 URL 섹션 (배너형 생성기에서 이식) */}
+                      <ModernFormGroup label="🌐 외부 이미지 URL">
                         <ModernInput
-                          value={config.userImageUrl}
-                          onChange={(value) => handleInputChange('userImageUrl', value)}
-                          placeholder="https://example.com/user.jpg"
+                          value={config.mainImageUrl}
+                          onChange={handleImageUrlChange}
+                          placeholder="이미지 URL 또는 HTML 코드"
                         />
+                        <ModernHint>
+                          <p><strong>💡 사용 방법:</strong></p>
+                          <p>• 이미지 URL을 직접 입력하거나</p>
+                          <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
+                        </ModernHint>
                       </ModernFormGroup>
-                    </ModernFormRow>
+                      
+                      <ModernFormGroup label="이미지 최대 너비 (px)">
+                        <ModernSlider
+                          value={config.imageMaxWidth}
+                          onChange={(value) => handleInputChange('imageMaxWidth', value)}
+                          min={200}
+                          max={600}
+                          step={20}
+                        />
+                        <ModernHint>
+                          현재: {config.imageMaxWidth}px
+                        </ModernHint>
+                      </ModernFormGroup>
+                    </>
                   )}
                 </ModernSection>
               </div>
@@ -176,381 +489,450 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
 
             {activeTab === 'style' && (
               <div className="tab-panel">
-                <ModernSection title="테마 설정">
-                  <ModernFormGroup label="컬러 테마">
+                <ModernSection title="프리셋 테마">
+                  <ModernFormGroup label="테마 선택">
                     <ModernSelect
-                      value={config.colorTheme}
-                      onChange={(value) => handleInputChange('colorTheme', value)}
-                      options={colorThemeOptions}
+                      value={selectedPreset}
+                      onChange={(value) => {
+                        setSelectedPreset(value);
+                        applyPresetTheme(value);
+                      }}
+                      options={presetOptions}
                     />
                     <ModernHint>
-                      원본 뷰익.css에서 추출한 정확한 컬러 테마
-                    </ModernHint>
-                  </ModernFormGroup>
-
-                  <ModernFormGroup label="폰트">
-                    <ModernSelect
-                      value={config.fontFamily}
-                      onChange={(value) => handleInputChange('fontFamily', value)}
-                      options={fontOptions}
-                    />
-                    <ModernHint>
-                      한글 웹폰트 최적화
+                      미리 정의된 테마를 선택하면 모든 색상이 자동 적용됩니다
                     </ModernHint>
                   </ModernFormGroup>
                 </ModernSection>
 
+                <ModernSection title="폰트 설정">
+                  <ModernFormRow>
+                    <ModernFormGroup label="폰트 패밀리">
+                      <ModernSelect
+                        value={config.fontFamily}
+                        onChange={(value) => handleInputChange('fontFamily', value)}
+                        options={fontOptions}
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="폰트 크기 (px)">
+                      <ModernSlider
+                        value={config.fontSize}
+                        onChange={(value) => handleInputChange('fontSize', value)}
+                        min={12}
+                        max={24}
+                        step={1}
+                      />
+                      <ModernHint>{config.fontSize}px</ModernHint>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormRow>
+                    <ModernFormGroup label="줄 간격">
+                      <ModernSlider
+                        value={config.lineHeight}
+                        onChange={(value) => handleInputChange('lineHeight', value)}
+                        min={1.0}
+                        max={2.5}
+                        step={0.1}
+                      />
+                      <ModernHint>{config.lineHeight}</ModernHint>
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="자간 (rem)">
+                      <ModernSlider
+                        value={config.letterSpacing}
+                        onChange={(value) => handleInputChange('letterSpacing', value)}
+                        min={-0.1}
+                        max={0.3}
+                        step={0.01}
+                      />
+                      <ModernHint>{config.letterSpacing}rem</ModernHint>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+                </ModernSection>
+
                 <ModernSection title="레이아웃 설정">
                   <ModernFormRow>
-                    <ModernFormGroup label="레이아웃 타입">
-                      <div className="radio-group">
-                        <label className="radio-option">
-                          <input
-                            type="radio"
-                            name="layoutType"
-                            value="vertical"
-                            checked={config.layoutType === 'vertical'}
-                            onChange={(e) => handleInputChange('layoutType', e.target.value)}
-                          />
-                          <span>세로형</span>
-                        </label>
-                        <label className="radio-option">
-                          <input
-                            type="radio"
-                            name="layoutType"
-                            value="horizontal"
-                            checked={config.layoutType === 'horizontal'}
-                            onChange={(e) => handleInputChange('layoutType', e.target.value)}
-                          />
-                          <span>가로형 (이미지 포함)</span>
-                        </label>
-                      </div>
+                    <ModernFormGroup label="최대 너비 (rem)">
+                      <ModernSlider
+                        value={config.maxWidth}
+                        onChange={(value) => handleInputChange('maxWidth', value)}
+                        min={30}
+                        max={80}
+                        step={1}
+                      />
+                      <ModernHint>{config.maxWidth}rem</ModernHint>
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="모서리 둥글기 (rem)">
+                      <ModernSlider
+                        value={config.borderRadius}
+                        onChange={(value) => handleInputChange('borderRadius', value)}
+                        min={0}
+                        max={3}
+                        step={0.1}
+                      />
+                      <ModernHint>{config.borderRadius}rem</ModernHint>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormGroup label="패딩 설정">
+                    <ModernFormRow>
+                      <ModernFormGroup label="상단 (rem)">
+                        <ModernSlider
+                          value={config.paddingTop}
+                          onChange={(value) => handleInputChange('paddingTop', value)}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.paddingTop}rem</ModernHint>
+                      </ModernFormGroup>
+                      
+                      <ModernFormGroup label="하단 (rem)">
+                        <ModernSlider
+                          value={config.paddingBottom}
+                          onChange={(value) => handleInputChange('paddingBottom', value)}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.paddingBottom}rem</ModernHint>
+                      </ModernFormGroup>
+                    </ModernFormRow>
+
+                    <ModernFormRow>
+                      <ModernFormGroup label="좌측 (rem)">
+                        <ModernSlider
+                          value={config.paddingLeft}
+                          onChange={(value) => handleInputChange('paddingLeft', value)}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.paddingLeft}rem</ModernHint>
+                      </ModernFormGroup>
+                      
+                      <ModernFormGroup label="우측 (rem)">
+                        <ModernSlider
+                          value={config.paddingRight}
+                          onChange={(value) => handleInputChange('paddingRight', value)}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.paddingRight}rem</ModernHint>
+                      </ModernFormGroup>
+                    </ModernFormRow>
+                  </ModernFormGroup>
+
+                  <ModernFormGroup label="그림자 설정">
+                    <ModernFormRow>
+                      <ModernFormGroup label="블러 (rem)">
+                        <ModernSlider
+                          value={config.shadowBlur}
+                          onChange={(value) => handleInputChange('shadowBlur', value)}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.shadowBlur}rem</ModernHint>
+                      </ModernFormGroup>
+                      
+                      <ModernFormGroup label="확산 (rem)">
+                        <ModernSlider
+                          value={config.shadowSpread}
+                          onChange={(value) => handleInputChange('shadowSpread', value)}
+                          min={0}
+                          max={3}
+                          step={0.1}
+                        />
+                        <ModernHint>{config.shadowSpread}rem</ModernHint>
+                      </ModernFormGroup>
+                    </ModernFormRow>
+                  </ModernFormGroup>
+                </ModernSection>
+              </div>
+            )}
+
+            {activeTab === 'colors' && (
+              <div className="tab-panel">
+                <ModernSection title="기본 색상">
+                  <ModernFormRow>
+                    <ModernFormGroup label="배경색">
+                      <ModernInput
+                        value={config.backgroundColor}
+                        onChange={(value) => handleInputChange('backgroundColor', value)}
+                        placeholder="radial-gradient(...)"
+                      />
                       <ModernHint>
-                        가로형은 좌측에 이미지, 우측에 텍스트가 배치됩니다
+                        CSS 배경 속성 (그라데이션 포함)
                       </ModernHint>
                     </ModernFormGroup>
                   </ModernFormRow>
+
+                  <ModernFormRow>
+                    <ModernFormGroup label="제목 색상">
+                      <ModernColorPicker
+                        value={config.titleColor}
+                        onChange={(value) => handleInputChange('titleColor', value)}
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="텍스트 색상">
+                      <ModernColorPicker
+                        value={config.textColor}
+                        onChange={(value) => handleInputChange('textColor', value)}
+                      />
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormGroup label="테두리 색상">
+                    <ModernColorPicker
+                      value={config.borderColor}
+                      onChange={(value) => handleInputChange('borderColor', value)}
+                    />
+                  </ModernFormGroup>
+                </ModernSection>
+
+                <ModernSection title="파란색 강조 ('작은따옴표')">
+                  <ModernFormRow>
+                    <ModernFormGroup label="배경색">
+                      <ModernInput
+                        value={config.highlightBoxColor}
+                        onChange={(value) => handleInputChange('highlightBoxColor', value)}
+                        placeholder="rgba(107, 182, 255, 0.1)"
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="테두리 색상">
+                      <ModernColorPicker
+                        value={config.highlightBoxBorderColor}
+                        onChange={(value) => handleInputChange('highlightBoxBorderColor', value)}
+                      />
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormGroup label="텍스트 색상">
+                    <ModernColorPicker
+                      value={config.highlightBoxTextColor}
+                      onChange={(value) => handleInputChange('highlightBoxTextColor', value)}
+                    />
+                  </ModernFormGroup>
+                </ModernSection>
+
+                <ModernSection title="노란색 대화 (&quot;큰따옴표&quot;)">
+                  <ModernFormRow>
+                    <ModernFormGroup label="배경색">
+                      <ModernInput
+                        value={config.dialogueBoxColor}
+                        onChange={(value) => handleInputChange('dialogueBoxColor', value)}
+                        placeholder="rgba(138, 121, 93, 0.1)"
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="테두리 색상">
+                      <ModernColorPicker
+                        value={config.dialogueBoxBorderColor}
+                        onChange={(value) => handleInputChange('dialogueBoxBorderColor', value)}
+                      />
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormGroup label="텍스트 색상">
+                    <ModernColorPicker
+                      value={config.dialogueBoxTextColor}
+                      onChange={(value) => handleInputChange('dialogueBoxTextColor', value)}
+                    />
+                  </ModernFormGroup>
                 </ModernSection>
               </div>
             )}
 
             {activeTab === 'advanced' && (
               <div className="tab-panel">
-                <ModernSection title="텍스트 설정">
-                  <ModernFormGroup label={`자간 (Letter Spacing): ${config.letterSpacing}rem`}>
-                    <ModernSlider
-                      value={config.letterSpacing}
-                      onChange={(value) => handleInputChange('letterSpacing', value)}
-                      min={-0.1}
-                      max={0.2}
-                      step={0.01}
+                <ModernSection title="커스텀 CSS">
+                  <ModernFormGroup label="커스텀 CSS 활성화">
+                    <ModernToggle
+                      checked={config.enableCustomCSS}
+                      onChange={(checked) => handleInputChange('enableCustomCSS', checked)}
                     />
+                    <ModernHint>
+                      추가 CSS 스타일을 적용할 수 있습니다
+                    </ModernHint>
                   </ModernFormGroup>
 
-                  <ModernFormGroup label={`행간 (Line Height): ${config.lineHeight}%`}>
-                    <ModernSlider
-                      value={config.lineHeight}
-                      onChange={(value) => handleInputChange('lineHeight', value)}
-                      min={100}
-                      max={200}
-                      step={10}
-                    />
-                  </ModernFormGroup>
+                  {config.enableCustomCSS && (
+                    <ModernFormGroup label="CSS 코드">
+                      <ModernTextarea
+                        value={config.customCSS}
+                        onChange={(value) => handleInputChange('customCSS', value)}
+                        placeholder=".custom-class {
+  color: #ff0000;
+  font-weight: bold;
+}
+
+/* 추가 스타일 */
+p {
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}"
+                        rows={10}
+                      />
+                      <ModernHint>
+                        HTML에 &lt;style&gt; 태그로 추가됩니다
+                      </ModernHint>
+                    </ModernFormGroup>
+                  )}
                 </ModernSection>
 
-                <ModernSection title="기능 설정">
-                  <ModernFormRow>
-                    <ModernFormGroup label="스크롤 활성화">
-                      <ModernToggle
-                        checked={config.enableScroll}
-                        onChange={(checked) => handleInputChange('enableScroll', checked)}
-                      />
-                      <ModernHint>
-                        긴 텍스트에 스크롤 적용
-                      </ModernHint>
-                    </ModernFormGroup>
-                    <ModernFormGroup label="접기/펼치기 버튼">
-                      <ModernToggle
-                        checked={config.enableFoldToggle}
-                        onChange={(checked) => handleInputChange('enableFoldToggle', checked)}
-                      />
-                      <ModernHint>
-                        메시지 접기/펼치기 기능
-                      </ModernHint>
-                    </ModernFormGroup>
-                  </ModernFormRow>
+                <ModernSection title="내보내기 옵션">
+                  <div className="export-buttons">
+                    <ModernButton onClick={onGenerateHTML}>
+                      🔄 HTML 재생성
+                    </ModernButton>
+                    
+                    <ModernButton onClick={downloadHTML}>
+                      💾 HTML 다운로드
+                    </ModernButton>
+                    
+                    <ModernButton onClick={onReset} danger>
+                      🔄 설정 초기화
+                    </ModernButton>
+                  </div>
                 </ModernSection>
               </div>
             )}
-          </div>
-
-          {/* 액션 버튼 */}
-          <div className="action-buttons">
-            <ModernButton onClick={onGenerateHTML} primary>
-              HTML 생성
-            </ModernButton>
-            <ModernButton onClick={onCopyHTML}>
-              ✨ 스타일 복사 (고급)
-            </ModernButton>
-            <ModernButton onClick={onReset}>
-              초기화
-            </ModernButton>
-          </div>
-          
-          <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
           </div>
         </div>
 
         {/* 미리보기 패널 */}
         <div className="preview-panel">
           <div className="panel-header">
-            <h2>실시간 미리보기</h2>
-            <div className="theme-indicator">
-              {COLOR_THEMES[config.colorTheme as keyof typeof COLOR_THEMES]?.name || '올드머니 - 일반'}
-            </div>
+            <h2>미리보기</h2>
+            <p className="panel-description">실시간 미리보기 - 설정 변경 시 자동 업데이트</p>
           </div>
-          
+
           <div className="preview-container">
-            <iframe
-              srcDoc={generatedHTML}
-              className="preview-iframe"
-              title="뷰익형 미리보기"
-            />
+            <div dangerouslySetInnerHTML={{ __html: generatePreviewHTML() }} />
           </div>
-          
-          <div className="preview-hint">
-            💡 실제 결과물은 다운로드한 HTML 파일을 브라우저에서 열어 확인하세요.
+
+          {/* HTML 코드 보기 */}
+          <div className="code-section">
+            <div className="code-header">
+              <h3>생성된 HTML 코드</h3>
+              <ModernButton 
+                onClick={() => navigator.clipboard.writeText(generatedHTML)}
+              >
+                📋 코드 복사
+              </ModernButton>
+            </div>
+            <div className="code-container">
+              <pre className="code-content">
+                <code>{generatedHTML}</code>
+              </pre>
+            </div>
           </div>
         </div>
       </div>
 
-      <style jsx global>{`
-        /* 기본 폼 스타일 */
-        .button {
-          padding: 0.5rem 1rem;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: 6px;
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a202c);
-          font-size: 0.875rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .button:hover {
-          background: var(--bg-tertiary, #f7fafc);
-        }
-
-        .button.primary {
-          background: #3b82f6;
-          color: white;
-          border-color: #3b82f6;
-        }
-
-        .button.primary:hover {
-          background: #2563eb;
-        }
-
-        .form-input {
-          width: 100%;
-          padding: 0.5rem 0.75rem;
-          border: 1px solid var(--border-color, #e2e8f0);
-          border-radius: 6px;
-          background: var(--bg-secondary, #ffffff);
-          color: var(--text-primary, #1a202c);
-          font-size: 0.875rem;
-          transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-textarea {
-          resize: vertical;
-          min-height: 100px;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        .form-label {
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: var(--text-primary, #1a202c);
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1rem;
-        }
-
-        .settings-section {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .section-title {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--text-primary, #1a202c);
-          margin: 0;
-          padding-bottom: 0.5rem;
-          border-bottom: 1px solid var(--border-color, #e2e8f0);
-        }
-
-        .hint {
-          font-size: 0.75rem;
-          color: var(--text-secondary, #6b7280);
-          margin-top: 0.25rem;
-        }
-
-        .toggle-group {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .toggle-wrapper {
-          position: relative;
-        }
-
-        .toggle-input {
-          position: absolute;
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
-
-        .toggle-label {
-          display: block;
-          width: 44px;
-          height: 24px;
-          background: #e2e8f0;
-          border-radius: 12px;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-
-        .toggle-input:checked + .toggle-label {
-          background: #3b82f6;
-        }
-
-        .toggle-switch {
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 20px;
-          height: 20px;
-          background: white;
-          border-radius: 50%;
-          transition: transform 0.2s ease;
-        }
-
-        .toggle-input:checked + .toggle-label .toggle-switch {
-          transform: translateX(20px);
-        }
-
-        .toggle-text {
-          font-size: 0.875rem;
-          color: var(--text-primary, #1a202c);
-          cursor: pointer;
-        }
-
-        @media (max-width: 768px) {
-          .form-row {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
-      <style jsx>{`
+      <style>{`
         .form-layout {
-          width: 100%;
+          display: flex;
+          gap: 2rem;
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 2rem;
         }
 
         .form-container {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 2rem;
-          max-width: 1400px;
-          margin: 0 auto;
+          width: 100%;
         }
 
         .settings-panel,
         .preview-panel {
           background: var(--bg-secondary);
           border-radius: 12px;
-          padding: 1.5rem;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          border: 1px solid var(--border-color);
+          overflow: hidden;
         }
 
         .panel-header {
+          padding: 1.5rem;
+          border-bottom: 1px solid var(--border-color);
+          background: var(--bg-secondary);
+        }
+
+        .header-content {
           display: flex;
           justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid var(--border-color);
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .header-text {
+          flex: 1;
+        }
+
+        .header-actions {
+          flex-shrink: 0;
         }
 
         .panel-header h2 {
-          margin: 0;
+          margin: 0 0 0.5rem 0;
+          color: var(--text-primary);
           font-size: 1.25rem;
           font-weight: 600;
-          color: var(--text-primary);
         }
 
-        .theme-indicator {
-          font-size: 0.875rem;
+        .panel-description {
+          margin: 0;
           color: var(--text-secondary);
-          background: var(--bg-tertiary);
-          padding: 0.25rem 0.75rem;
-          border-radius: 6px;
+          font-size: 0.875rem;
         }
 
         .tab-navigation {
           display: flex;
-          background: var(--bg-tertiary);
-          border-radius: 8px;
-          padding: 0.25rem;
-          margin-bottom: 1.5rem;
+          background: var(--bg-secondary);
+          border-bottom: 1px solid var(--border-color);
         }
 
         .tab-button {
           flex: 1;
-          padding: 0.5rem 1rem;
+          padding: 1rem;
           border: none;
           background: transparent;
           color: var(--text-secondary);
-          font-size: 0.875rem;
-          font-weight: 500;
-          border-radius: 6px;
           cursor: pointer;
           transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+          font-weight: 500;
         }
 
         .tab-button:hover {
+          background: var(--bg-hover);
           color: var(--text-primary);
         }
 
         .tab-button.active {
-          background: var(--bg-secondary);
-          color: var(--text-primary);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          background: var(--bg-primary);
+          color: var(--accent-color);
+          border-bottom: 2px solid var(--accent-color);
+        }
+
+        .tab-icon {
+          font-size: 1rem;
         }
 
         .tab-content {
-          margin-bottom: 2rem;
+          padding: 1.5rem;
         }
 
         .tab-panel {
@@ -559,71 +941,98 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
           gap: 1.5rem;
         }
 
-        .radio-group {
-          display: flex;
-          gap: 1rem;
-        }
-
-        .radio-option {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          cursor: pointer;
-        }
-
-        .radio-option input[type="radio"] {
-          margin: 0;
-        }
-
-        .radio-option span {
-          font-size: 0.875rem;
-          color: var(--text-primary);
-        }
-
-        .action-buttons {
+        .export-buttons {
           display: flex;
           gap: 0.75rem;
           flex-wrap: wrap;
         }
 
         .preview-container {
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          overflow: hidden;
-          margin-bottom: 1rem;
+          background: var(--bg-primary);
+          padding: 20px;
+          margin: 0;
+          min-height: 600px;
         }
 
-        .preview-iframe {
-          width: 100%;
-          height: 600px;
-          border: none;
-          display: block;
+        .code-section {
+          border-top: 1px solid var(--border-color);
         }
 
-        .preview-hint {
+        .code-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 1.5rem;
+          background: var(--bg-secondary);
+          border-bottom: 1px solid var(--border-color);
+        }
+
+        .code-header h3 {
+          margin: 0;
+          color: var(--text-primary);
+          font-size: 1rem;
+          font-weight: 600;
+        }
+
+        .code-container {
+          max-height: 300px;
+          overflow: auto;
+          background: var(--bg-primary);
+          scrollbar-width: thin;
+          scrollbar-color: var(--border-color) var(--bg-primary);
+        }
+
+        .code-container::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .code-container::-webkit-scrollbar-track {
+          background: var(--bg-primary);
+        }
+
+        .code-container::-webkit-scrollbar-thumb {
+          background-color: var(--border-color);
+          border-radius: 4px;
+        }
+
+        .code-container::-webkit-scrollbar-thumb:hover {
+          background-color: var(--text-secondary);
+        }
+
+        .code-content {
+          margin: 0;
+          padding: 1rem;
+          color: var(--text-primary);
+          font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
           font-size: 0.75rem;
-          color: var(--text-secondary);
-          text-align: center;
+          line-height: 1.4;
+          white-space: pre-wrap;
+          word-break: break-all;
+          background: var(--bg-primary);
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
           .form-container {
             grid-template-columns: 1fr;
-            gap: 1.5rem;
+          }
+          
+          .form-layout {
+            padding: 1rem;
           }
         }
 
         @media (max-width: 768px) {
-          .action-buttons {
-            flex-direction: column;
-          }
-
           .tab-navigation {
-            flex-direction: column;
+            flex-wrap: wrap;
           }
-
+          
           .tab-button {
-            text-align: left;
+            flex: 1 1 50%;
+            min-width: 120px;
+          }
+          
+          .export-buttons {
+            flex-direction: column;
           }
         }
       `}</style>

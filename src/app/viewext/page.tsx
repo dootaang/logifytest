@@ -7,29 +7,72 @@ import ViewextGenerator from '@/components/ViewextGenerator'
 import { DarkModeUtils } from '@/utils/styles'
 import { copyToAdvancedClipboard, copyToSimpleClipboard } from '@/utils/advancedClipboard'
 
-// 뷰익형 기본 설정
+// 뷰익형 기본 설정 (새로운 구조)
 const defaultViewextConfig = {
-  content: `Character: 안녕하세요! 오늘 날씨가 정말 좋네요.
+  // 기본 콘텐츠
+  content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다.
 
-User: 네, 맞아요. 산책하기 딱 좋은 날씨인 것 같아요.
+제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
 
-Character: 그러게요. 이런 날에는 밖에 나가서 **신선한 공기**를 마시는 게 최고죠.
+당신은 '등록 및 초기 측정'라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다.
 
-User: 혹시 추천해주실 만한 산책로가 있나요?
+그녀가 단말기에서 고개를 들자, 그녀의 시선이 당신과 정면으로 마주쳤다. 거기에는 어떤 판단도 없이, 그저 차분하고 전문적인 평가만이 담겨 있었다. 그녀는 약간의 연습된 미소를 지어 보였다.
 
-Character: 네! 근처에 있는 공원이 정말 예뻐요. 특히 이 시간대에는 *햇살이 나무 사이로* 들어와서 정말 아름다워요.`,
-  characterName: 'Character',
-  userName: 'User',
-  colorTheme: 'oldmoney-normal',
-  layoutType: 'vertical' as 'vertical' | 'horizontal',
-  showImages: false,
+"헌터 협회에 오신 것을 환영합니다."
+
+최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다.
+
+"각성을 축하드립니다. 공식 등급 측정을 진행하기 전에, 헌터 프로필에 기록해야 할 몇 가지 필수 세부 정보가 있습니다. 이는 모든 신규 등록자에게 적용되는 표준 절차입니다."`,
+  title: 'ALTERNATE HUNTERS',
+  
+  // 이미지 설정
+  mainImageUrl: '//ac.namu.la/20250526sac/b21b640b25a435f4416eb5f768020e1299922b5b279fde6704fd41a88db25299.png?expires=1748352815&key=XzMdaj1QDkKe670tMMMsIg',
+  showMainImage: true,
+  imageMaxWidth: 320,
+  
+  // 색상 및 스타일 설정 (Alternate Hunters 테마)
+  backgroundColor: 'radial-gradient(circle at 10% 20%, rgb(20, 30, 35) 20%, #0f1a20 70%)',
+  backgroundGradient: '',
+  titleColor: '#b8a576',
+  textColor: '#b5a382',
+  borderColor: '#1c352d',
+  
+  // 하이라이트 박스 설정
+  highlightBoxColor: 'rgba(107, 182, 255, 0.1)',
+  highlightBoxBorderColor: '#6bb6ff',
+  highlightBoxTextColor: '#6bb6ff',
+  
+  // 대화 박스 설정
+  dialogueBoxColor: 'rgba(138, 121, 93, 0.1)',
+  dialogueBoxBorderColor: '#8a795d',
+  dialogueBoxTextColor: '#f1c40f',
+  
+  // 폰트 설정
   fontFamily: 'Pretendard Variable',
+  fontSize: 16,
+  lineHeight: 1.5,
   letterSpacing: 0,
-  lineHeight: 150,
-  enableScroll: false,
-  enableFoldToggle: false,
-  characterImageUrl: '',
-  userImageUrl: ''
+  
+  // 레이아웃 설정
+  maxWidth: 55,
+  paddingTop: 1,
+  paddingRight: 2,
+  paddingBottom: 0.1,
+  paddingLeft: 2,
+  borderRadius: 1,
+  shadowBlur: 2,
+  shadowSpread: 0,
+  
+  // 고급 설정
+  enableCustomCSS: false,
+  customCSS: '',
+  
+  // 단어 변환 기능
+  wordReplacements: [
+    { from: '헌터', to: '모험가' },
+    { from: '', to: '' },
+    { from: '', to: '' }
+  ]
 }
 
 export default function ViewextPage() {
@@ -168,11 +211,11 @@ export default function ViewextPage() {
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">
-            <span className="page-icon">💬</span>
-            뷰익형 로그 생성기
+            <span className="page-icon">🔖</span>
+            뷰익형 로그 제조기
           </h1>
           <p className="page-description">
-            원본 뷰익.css 스타일을 기반으로 한 정확한 뷰익형 HTML 생성기입니다.
+            뷰어 익스텐션 디자인을 긴빠이 해버렸지 모야?
           </p>
         </div>
 

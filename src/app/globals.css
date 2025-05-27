@@ -13,6 +13,7 @@
   /* 새로운 색상 변수들 */
   --bg-primary: #FFFFFF;
   --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
   --bg-hover: #F1F5F9;
   --text-primary: #1E293B;
   --border-color: #E2E8F0;
@@ -60,6 +61,7 @@
     /* 새로운 다크모드 색상 변수들 */
     --bg-primary: #1C1C1E;
     --bg-secondary: #2C2C2E;
+    --bg-tertiary: #3A3A3C;
     --bg-hover: #3A3A3C;
     --text-primary: #FFFFFF;
     --border-color: #38383A;
@@ -85,6 +87,7 @@
   /* 새로운 다크모드 색상 변수들 */
   --bg-primary: #1C1C1E;
   --bg-secondary: #2C2C2E;
+  --bg-tertiary: #3A3A3C;
   --bg-hover: #3A3A3C;
   --text-primary: #FFFFFF;
   --border-color: #38383A;
@@ -109,6 +112,7 @@
   /* 새로운 라이트모드 색상 변수들 */
   --bg-primary: #FFFFFF;
   --bg-secondary: #F8FAFC;
+  --bg-tertiary: #F1F5F9;
   --bg-hover: #F1F5F9;
   --text-primary: #1E293B;
   --border-color: #E2E8F0;

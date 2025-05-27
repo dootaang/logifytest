@@ -5,6 +5,7 @@ import Navigation from '@/components/Navigation'
 import ChatchanFormLayout from '@/components/ChatchanFormLayout'
 import { useChatchanGeneratorV2 } from '@/generators/ChatchanGeneratorV2'
 import { DarkModeUtils } from '@/utils/styles'
+import { copyToAdvancedClipboard, copyToSimpleClipboard } from '@/utils/advancedClipboard'
 
 interface WordReplacement {
   from: string;
@@ -45,7 +46,7 @@ USER: 안녕하세요? 오늘 ^날씨^가 어때요?
 AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $23도$로 예상됩니다. ***야외 활동하기 좋은 날씨네요!***`,
   selectedTheme: 'light',
   wordReplacements: [
-    { from: '', to: '' },
+    { from: 'AI', to: '봇' },
     { from: '', to: '' },
     { from: '', to: '' }
   ] as WordReplacement[]
@@ -54,9 +55,10 @@ AI: 안녕하세요! 오늘 날씨는 맑고 화창합니다. 최고 기온은 $
 export default function ChatchanPage() {
   const [config, setConfig] = useState(defaultChatchanConfig)
   const [generatedHTML, setGeneratedHTML] = useState('')
+  const [previewHTML, setPreviewHTML] = useState('')
 
   // 챗챈 생성기 훅
-  const { generateHTML: generateChatchanHTML } = useChatchanGeneratorV2(config)
+  const { generateHTML: generateChatchanHTML, generatePreviewHTML: generateChatchanPreviewHTML } = useChatchanGeneratorV2(config)
 
   // localStorage에서 설정 불러오기
   const loadConfig = () => {
@@ -128,8 +130,10 @@ export default function ChatchanPage() {
   // 설정이 변경될 때마다 자동 HTML 생성
   useEffect(() => {
     const html = generateChatchanHTML()
+    const preview = generateChatchanPreviewHTML()
     setGeneratedHTML(html)
-  }, [config, generateChatchanHTML])
+    setPreviewHTML(preview)
+  }, [config, generateChatchanHTML, generateChatchanPreviewHTML])
 
   // 핸들러 함수들
   const handleConfigChange = (newConfig: Partial<typeof defaultChatchanConfig>) => {
@@ -141,14 +145,29 @@ export default function ChatchanPage() {
 
   const handleGenerateHTML = () => {
     const html = generateChatchanHTML()
+    const preview = generateChatchanPreviewHTML()
     setGeneratedHTML(html)
+    setPreviewHTML(preview)
   }
 
-  const handleCopyHTML = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(generatedHTML).then(() => {
-        alert('챗챈형 HTML 코드가 클립보드에 복사되었습니다!')
-      })
+  const handleCopyHTML = async () => {
+    try {
+      // 고급 클립보드 복사 시도 (HTML + 이미지)
+      const success = await copyToAdvancedClipboard({
+        htmlContent: generatedHTML,
+        plainTextContent: generatedHTML,
+        title: '챗챈형 로그',
+        author: '챗챈형 생성기'
+      });
+
+      if (success) {
+        alert('🎉 챗챈형 로그가 스타일과 이미지와 함께 클립보드에 복사되었습니다!\n\n이제 글쓰기 에디터에 붙여넣기하면 디자인이 그대로 적용됩니다.');
+      } else {
+        alert('📋 챗챈형 HTML 코드가 클립보드에 복사되었습니다!\n\n(고급 복사 기능을 지원하지 않는 브라우저입니다)');
+      }
+    } catch (error) {
+      console.error('클립보드 복사 실패:', error);
+      alert('❌ 클립보드 복사에 실패했습니다. 다시 시도해주세요.');
     }
   }
 
@@ -182,6 +201,7 @@ export default function ChatchanPage() {
           config={config}
           onConfigChange={handleConfigChange}
           generatedHTML={generatedHTML}
+          previewHTML={previewHTML}
           onGenerateHTML={handleGenerateHTML}
           onCopyHTML={handleCopyHTML}
           onReset={handleReset}

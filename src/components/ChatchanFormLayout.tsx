@@ -55,6 +55,7 @@ interface ChatchanFormLayoutProps {
   config: ChatchanConfig;
   onConfigChange: (newConfig: Partial<ChatchanConfig>) => void;
   generatedHTML: string;
+  previewHTML: string;
   onGenerateHTML: () => void;
   onCopyHTML: () => void;
   onReset: () => void;
@@ -93,6 +94,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
   config,
   onConfigChange,
   generatedHTML,
+  previewHTML,
   onGenerateHTML,
   onCopyHTML,
   onReset
@@ -104,6 +106,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
   const [presets, setPresets] = useState<{ [key: string]: ChatchanConfig }>({});
   const [presetName, setPresetName] = useState('');
   const [selectedPreset, setSelectedPreset] = useState('');
+  const [uploadStatus, setUploadStatus] = useState('');
 
   // 자동 저장 키 상수
   const AUTOSAVE_PREFIX = 'autoSavedChat_v30_';
@@ -473,6 +476,84 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     };
   }, []);
 
+  // 이미지 업로드 핸들러
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadStatus('❌ 파일 크기가 5MB를 초과합니다.')
+      return
+    }
+
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      setUploadStatus('❌ 이미지 파일만 업로드 가능합니다.')
+      return
+    }
+
+    setUploadStatus('⏳ 업로드 중...')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        onConfigChange({ characterImageUrl: data.url })
+        if (data.isDataUrl) {
+          setUploadStatus('✅ 업로드 성공! (base64 변환됨)')
+        } else {
+          setUploadStatus('✅ 업로드 성공!')
+        }
+        
+        // 3초 후 상태 메시지 제거
+        setTimeout(() => setUploadStatus(''), 3000)
+      } else {
+        const errorData = await response.json()
+        setUploadStatus(`❌ 업로드 실패: ${errorData.error || '알 수 없는 오류'}`)
+      }
+    } catch (error) {
+      console.error('업로드 오류:', error)
+      setUploadStatus('❌ 업로드 중 오류가 발생했습니다.')
+    }
+  }
+
+  // HTML에서 이미지 URL 추출하는 함수
+  const extractImageUrlFromHtml = (htmlString: string) => {
+    const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/i
+    const match = htmlString.match(imgTagRegex)
+    
+    if (match && match[1]) {
+      return match[1]
+    }
+    
+    return htmlString
+  }
+
+  // 입력값이 HTML인지 확인하는 함수
+  const isHtmlImageTag = (input: string) => {
+    return input.includes('<img') && input.includes('src=')
+  }
+
+  // 이미지 URL 변경 핸들러 (HTML 자동 추출 포함)
+  const handleImageUrlChange = (value: string) => {
+    let processedValue = value;
+    
+    // HTML 코드에서 이미지 URL 자동 추출
+    if (isHtmlImageTag(value)) {
+      processedValue = extractImageUrlFromHtml(value);
+    }
+    
+    onConfigChange({ characterImageUrl: processedValue });
+  };
+
   // 캐릭터 이미지 사용 토글 처리
   const handleImageToggle = (checked: boolean) => {
     onConfigChange({ useCharacterImage: checked });
@@ -480,6 +561,25 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
       onConfigChange({ characterImageUrl: '' });
     }
   };
+
+  // 단어 변환 기능 (제리형에서 이식)
+  const handleWordReplacementChange = (index: number, field: string, value: string) => {
+    const newReplacements = [...config.wordReplacements];
+    newReplacements[index][field as keyof typeof newReplacements[0]] = value;
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const addWordReplacement = () => {
+    const newReplacements = [...config.wordReplacements, { from: '', to: '' }];
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+  const removeWordReplacement = (index: number) => {
+    const newReplacements = config.wordReplacements.filter((_, i) => i !== index);
+    onConfigChange({ wordReplacements: newReplacements });
+  };
+
+
 
   return (
     <div className="container">
@@ -567,19 +667,92 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                 />
               </ModernFormGroup>
             </ModernFormRow>
-            <ModernFormGroup label="캐릭터 이미지 URL">
-              <ModernInput
-                value={config.characterImageUrl}
-                onChange={(value) => onConfigChange({ characterImageUrl: value })}
-                placeholder="https://example.com/image.png"
-                disabled={!config.useCharacterImage}
-              />
+            <ModernFormGroup>
               <ModernCheckbox
                 checked={config.useCharacterImage}
                 onChange={handleImageToggle}
                 label="캐릭터 이미지 사용"
               />
             </ModernFormGroup>
+
+            {config.useCharacterImage && (
+              <>
+                {/* 로컬 이미지 업로드 섹션 */}
+                <ModernFormGroup label="🖼️ 로컬 이미지 업로드">
+                  <div style={{
+                    border: '2px dashed #cbd5e0',
+                    borderRadius: '8px',
+                    padding: '20px',
+                    textAlign: 'center',
+                    backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                    transition: 'all 0.2s ease'
+                  }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                      id="chatchan-image-upload"
+                    />
+                    <label 
+                      htmlFor="chatchan-image-upload"
+                      style={{
+                        cursor: 'pointer',
+                        display: 'block'
+                      }}
+                    >
+                      <div style={{
+                        fontSize: '48px',
+                        marginBottom: '10px',
+                        color: isDarkMode ? '#a0aec0' : '#718096'
+                      }}>
+                        📁
+                      </div>
+                      <p style={{
+                        margin: '0 0 5px 0',
+                        fontWeight: 'bold',
+                        color: isDarkMode ? '#e2e8f0' : '#2d3748'
+                      }}>
+                        클릭하여 이미지 선택
+                      </p>
+                      <p style={{
+                        margin: 0,
+                        fontSize: '14px',
+                        color: isDarkMode ? '#a0aec0' : '#718096'
+                      }}>
+                        JPG, PNG, GIF 파일 지원 (최대 5MB)
+                      </p>
+                    </label>
+                  </div>
+                  {uploadStatus && (
+                    <div style={{
+                      marginTop: '10px',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      backgroundColor: uploadStatus.includes('성공') ? '#c6f6d5' : '#fed7d7',
+                      color: uploadStatus.includes('성공') ? '#2f855a' : '#c53030',
+                      fontSize: '14px'
+                    }}>
+                      {uploadStatus}
+                    </div>
+                  )}
+                </ModernFormGroup>
+
+                {/* 외부 URL 섹션 */}
+                <ModernFormGroup label="🌐 외부 이미지 URL">
+                  <ModernInput
+                    value={config.characterImageUrl}
+                    onChange={handleImageUrlChange}
+                    placeholder="이미지 URL 또는 HTML 코드"
+                  />
+                  <ModernHint>
+                    <p><strong>💡 사용 방법:</strong></p>
+                    <p>• 이미지 URL을 직접 입력하거나</p>
+                    <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
+                  </ModernHint>
+                </ModernFormGroup>
+              </>
+            )}
           </ModernSection>
 
           {/* 디자인 및 스타일 설정 */}
@@ -793,6 +966,106 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
             </ModernFormGroup>
           </ModernSection>
 
+          {/* 단어 변환 기능 (제리형에서 이식) */}
+          <ModernSection title="🔄 단어 변환">
+            <ModernHint>
+              <p><strong>💡 사용법:</strong></p>
+              <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
+              <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
+              <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
+            </ModernHint>
+            {config.wordReplacements.map((replacement, index) => (
+              <div key={index} style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                alignItems: 'center', 
+                marginBottom: '12px',
+                padding: '12px',
+                backgroundColor: 'var(--surface)',
+                borderRadius: '8px',
+                border: '1px solid var(--border)'
+              }}>
+                                 <ModernInput
+                   value={replacement.from}
+                   onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                   placeholder="변경할 단어"
+                 />
+                 <span style={{ 
+                   fontSize: '18px', 
+                   color: 'var(--text-secondary)',
+                   fontWeight: 'bold'
+                 }}>→</span>
+                 <ModernInput
+                   value={replacement.to}
+                   onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                   placeholder="대체할 단어"
+                 />
+                <ModernButton
+                  danger
+                  onClick={() => removeWordReplacement(index)}
+                  style={{ padding: '8px 12px', fontSize: '12px' }}
+                >
+                  삭제
+                </ModernButton>
+              </div>
+            ))}
+            <ModernFormGroup>
+              <ModernButton onClick={addWordReplacement}>
+                + 단어 변환 추가
+              </ModernButton>
+            </ModernFormGroup>
+          </ModernSection>
+
+          {/* 단어 변환 기능 (제리형에서 이식) */}
+          <ModernSection title="🔄 단어 변환">
+            <ModernHint>
+              <p><strong>💡 사용법:</strong></p>
+              <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
+              <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
+              <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
+            </ModernHint>
+            {config.wordReplacements.map((replacement, index) => (
+              <div key={index} style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                alignItems: 'center', 
+                marginBottom: '12px',
+                padding: '12px',
+                backgroundColor: 'var(--surface)',
+                borderRadius: '8px',
+                border: '1px solid var(--border)'
+              }}>
+                <ModernInput
+                  value={replacement.from}
+                  onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                  placeholder="변경할 단어"
+                />
+                <span style={{ 
+                  fontSize: '18px', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: 'bold'
+                }}>→</span>
+                <ModernInput
+                  value={replacement.to}
+                  onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                  placeholder="대체할 단어"
+                />
+                <ModernButton
+                  danger
+                  onClick={() => removeWordReplacement(index)}
+                  style={{ padding: '8px 12px', fontSize: '12px' }}
+                >
+                  삭제
+                </ModernButton>
+              </div>
+            ))}
+            <ModernFormGroup>
+              <ModernButton onClick={addWordReplacement}>
+                + 단어 변환 추가
+              </ModernButton>
+            </ModernFormGroup>
+          </ModernSection>
+
           {/* 프리셋 관리 */}
           <ModernSection title="💾 설정 프리셋 관리">
             <ModernFormRow>
@@ -966,10 +1239,14 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
               </ModernFormGroup>
               <ModernFormGroup>
                 <ModernButton onClick={onCopyHTML}>
-                  HTML 복사하기
+                  ✨ 스타일 복사 (고급)
                 </ModernButton>
               </ModernFormGroup>
             </ModernFormRow>
+            
+            <ModernHint>
+              💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
+            </ModernHint>
           </ModernSection>
 
           {/* HTML 결과 */}
@@ -993,7 +1270,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
           </div>
           <div className="preview-container">
             {generatedHTML ? (
-              <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
+              <div dangerouslySetInnerHTML={{ __html: previewHTML }} />
             ) : (
               <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '50px 20px' }}>
                 미리보기 영역입니다. 'HTML 생성하기' 버튼을 눌러주세요.
