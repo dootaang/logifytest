@@ -1,6 +1,11 @@
 {
-  "/bookmarklet/page": "app/bookmarklet/page.js",
-  "/jelly/page": "app/jelly/page.js",
+  "/api/upload/route": "app/api/upload/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/banner/page": "app/banner/page.js",
   "/bingdun/page": "app/bingdun/page.js",
-  "/viewext/page": "app/viewext/page.js"
+  "/bookmarklet/page": "app/bookmarklet/page.js",
+  "/chatchan/page": "app/chatchan/page.js",
+  "/viewext/page": "app/viewext/page.js",
+  "/page": "app/page.js",
+  "/jelly/page": "app/jelly/page.js"
 }

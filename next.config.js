@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
   images: {
@@ -23,7 +22,7 @@ const nextConfig = {
   // 웹팩 설정으로 청크 문제 해결
   webpack: (config, { isServer, dev }) => {
     if (!isServer && !dev) {
-      // 정적 내보내기에서 안정적인 청크 처리
+      // 서버 기능을 위한 청크 처리 최적화
       config.optimization.splitChunks = {
         chunks: 'all',
         minSize: 20000,
@@ -46,7 +45,7 @@ const nextConfig = {
     return config
   },
   
-  // 정적 파일 생성 시 더 안정적인 설정
+  // 서버 기능을 위한 설정
   generateEtags: false,
   poweredByHeader: false,
   
