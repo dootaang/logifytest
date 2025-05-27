@@ -60,17 +60,21 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
     if (url.startsWith('data:')) {
       return url;
     }
-    // 절대 URL (//로 시작)은 https 프로토콜 추가
+    // 아카라이브 이미지 URL (//ac-p1.namu.la 또는 //ac.namu.la)은 원본 형태 유지
+    if (url.startsWith('//') && (url.includes('ac-p1.namu.la') || url.includes('ac.namu.la'))) {
+      return url;  // 아카라이브 URL은 원본 형태 그대로 사용
+    }
+    // 기타 절대 URL (//로 시작)은 https 프로토콜 추가
     if (url.startsWith('//')) {
       return 'https:' + url;
     }
-    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
+    // 레거시 로컬 업로드 경로는 현재 호스트 기준으로 변환 (Vercel 환경에서는 사용되지 않음)
     if (url.startsWith('/uploads/')) {
-      // 개발환경에서는 localhost 사용
       if (typeof window !== 'undefined') {
         return window.location.protocol + '//' + window.location.host + url;
       }
-      return 'http://localhost:3000' + url;
+      // Vercel 환경에서는 이 경로가 사용되지 않지만 폴백 제공
+      return url;
     }
     // http/https가 없으면 https 추가
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -88,14 +92,16 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
       return normalizedUrl;
     }
     
-    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
+    // 레거시 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
     if (normalizedUrl.includes('/uploads/')) {
       return normalizedUrl;
     }
     
     // 아카라이브 이미지인 경우 프록시를 통해 로드
     if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
+      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
     }
     
     // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
@@ -223,13 +229,13 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
       tag.trim() ? `<span style="${getTagStyle(tag)}">${tag}</span>` : ''
     ).filter(Boolean).join('');
 
-    // 프로필 섹션 HTML (조건부 렌더링)
+    // 프로필 섹션 HTML (조건부 렌더링) - img 태그 사용으로 변경
     const profileSectionHTML = config.hideProfileSection ? '' : `
-    <div style="width:100%;height:180px;background:url('${finalImageUrl}') center center / cover no-repeat;border-top-left-radius:16px;border-top-right-radius:16px;">
-        <br>
+    <div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
+        <img style="width:100%;height:100%;object-fit:cover;border-top-left-radius:16px;border-top-right-radius:16px;" src="${finalImageUrl}" class="fr-fic fr-dii">
     </div>
 
-    <div style="margin-top:-48px;text-align:center;">
+    <div style="margin-top:-48px;text-align:center;position:relative;z-index:2;">
         <img style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid ${themeStyles.profileBorder};" src="${profileImageUrl}" class="fr-fic fr-dii">
     </div>
 
@@ -264,9 +270,139 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
     const finalImageUrl = getPreviewImageUrl(config.backgroundImage);
     const profileImageUrl = getPreviewImageUrl(config.profileImage);
 
-    // ... 나머지 로직은 동일하지만 이미지 URL만 프록시 사용
-    return generateHTML().replace(normalizeImageUrl(config.backgroundImage), finalImageUrl)
-                         .replace(normalizeImageUrl(config.profileImage), profileImageUrl);
+    // 디자인 테마에 따른 색상 설정
+    let themeStyles = {
+      cardBackground: '#ffffff',
+      cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
+      profileBorder: '#ffffff',
+      textColor: '#333333',
+      nameColor: '#000000',
+      tagTextColor: config.tagTextColor,
+      tagBackgroundColor: config.tagBackgroundColor,
+      tagBorderColor: '#000000'
+    };
+
+    switch (config.designTheme) {
+      case 'black':
+        themeStyles = {
+          cardBackground: '#1a1a1a',
+          cardGradient: 'linear-gradient(to bottom, #1a1a1a 60%, #0f0f0f)',
+          profileBorder: '#333333',
+          textColor: '#ffffff',
+          nameColor: '#ffffff',
+          tagTextColor: '#ffffff',
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : '#333333',
+          tagBorderColor: '#ffffff'
+        };
+        break;
+      case 'blackwhite':
+        themeStyles = {
+          cardBackground: '#000000',
+          cardGradient: 'linear-gradient(to bottom, #000000 60%, #1a1a1a)',
+          profileBorder: '#ffffff',
+          textColor: '#ffffff',
+          nameColor: '#ffffff',
+          tagTextColor: '#ffffff',
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : '#333333',
+          tagBorderColor: '#ffffff'
+        };
+        break;
+      case 'white':
+      default:
+        themeStyles = {
+          cardBackground: '#ffffff',
+          cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
+          profileBorder: '#ffffff',
+          textColor: '#333333',
+          nameColor: '#000000',
+          tagTextColor: config.tagStyle === 'outline' ? '#000000' : config.tagTextColor,
+          tagBackgroundColor: config.tagStyle === 'outline' ? 'transparent' : config.tagBackgroundColor,
+          tagBorderColor: '#000000'
+        };
+        break;
+    }
+
+    const contentHTML = paragraphs.map(paragraph => {
+      const trimmedParagraph = paragraph.trim();
+      
+      let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
+      if (config.paragraphIndent) {
+        paragraphStyle += ' text-indent: 1.5em;';
+      }
+      
+      // 대화 부분 스타일링
+      if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
+        const beforeQuote = trimmedParagraph.split('"')[0];
+        const quote = trimmedParagraph.split('"')[1];
+        const afterQuote = trimmedParagraph.split('"')[2] || '';
+        
+        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+        <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          "${quote}"
+        </div>
+        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+      } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
+        const beforeQuote = trimmedParagraph.split("'")[0];
+        const quote = trimmedParagraph.split("'")[1];
+        const afterQuote = trimmedParagraph.split("'")[2] || '';
+        
+        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+        <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+          '${quote}'
+        </div>
+        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+      } else {
+        return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
+      }
+    }).join('');
+
+    // 태그 스타일 설정
+    const getTagStyle = (tagText: string) => {
+      if (!tagText.trim()) return '';
+      
+      if (config.tagStyle === 'outline') {
+        return `background: ${themeStyles.tagBackgroundColor}; color: ${themeStyles.tagTextColor}; border: 1px solid ${themeStyles.tagBorderColor}; padding: 4px 12px; border-radius: ${config.tagBorderRadius}px; font-size: 12px; display: inline-block; margin: 4px;`;
+      } else {
+        return `background: ${themeStyles.tagBackgroundColor}; color: ${themeStyles.tagTextColor}; padding: 4px 12px; border-radius: ${config.tagBorderRadius}px; font-size: 12px; display: inline-block; margin: 4px;`;
+      }
+    };
+
+    // 활성화된 태그들만 렌더링
+    const tags = [config.tag1Text, config.tag2Text, config.tag3Text].slice(0, config.tagCount);
+    const tagHTML = tags.map(tag => 
+      tag.trim() ? `<span style="${getTagStyle(tag)}">${tag}</span>` : ''
+    ).filter(Boolean).join('');
+
+    // 프로필 섹션 HTML (조건부 렌더링) - 미리보기용 프록시 이미지 사용, img 태그로 변경
+    const profileSectionHTML = config.hideProfileSection ? '' : `
+    <div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
+        <img style="width:100%;height:100%;object-fit:cover;border-top-left-radius:16px;border-top-right-radius:16px;" src="${finalImageUrl}" class="fr-fic fr-dii">
+    </div>
+
+    <div style="margin-top:-48px;text-align:center;position:relative;z-index:2;">
+        <img style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid ${themeStyles.profileBorder};" src="${profileImageUrl}" class="fr-fic fr-dii">
+    </div>
+
+    <div style="padding:1.5rem;text-align:center;">
+        <h2 style="margin-bottom:0.5rem;font-weight:600;">
+            <em><span style="color: ${themeStyles.nameColor};">${config.leftText}</span></em>
+        </h2>
+
+        ${config.showCharacterDescription ? `<p style="font-size:13px;color:${themeStyles.textColor};line-height:1.6;">${config.characterDescription}</p>` : ''}
+
+        ${tagHTML ? `<div style="margin-top:1rem;text-align:center;">${tagHTML}</div>` : ''}
+    </div>
+
+    <hr style="border-color: ${config.designTheme === 'white' ? '#eeeeee' : '#444444'};">`;
+
+    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+
+    ${profileSectionHTML}
+
+    <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
+        ${contentHTML}
+    </div>
+</div><p><br></p>`;
   };
 
   return {

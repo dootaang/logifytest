@@ -11,6 +11,21 @@ interface WordReplacement {
   to: string;
 }
 
+interface BookmarkletConfig {
+  content: string;
+  backgroundColor: string;
+  textColor: string;
+  highlightColor: string;
+  emphasisColor: string;
+  fontSize: number;
+  lineHeight: number;
+  containerWidth: number;
+  borderRadius: number;
+  padding: number;
+  boxShadow: string;
+  wordReplacements: WordReplacement[];
+}
+
 // 북마클릿형 기본 설정
 const defaultBookmarkletConfig = {
   content: `그는 몸을 바로 세웠다. 그녀보다 약간 큰 키로 내려다보며, 그 어이없을 정도로 자신만만한 미소는 여전히 얼굴에 확고히 자리 잡고 있었다. 마치 복잡한 방정식을 풀고 반박 불가능한 증명을 제시한 것처럼. 무도회장 바닥에 무릎을 꿇고 그녀의&hellip; 감정적 후견인이 되겠다고 선언하는 것이 포함된 증명 말이다.
@@ -116,7 +131,7 @@ export default function BookmarkletPage() {
   }, [config])
 
   // 핸들러 함수들
-  const handleConfigChange = (newConfig: Partial<typeof defaultBookmarkletConfig>) => {
+  const handleConfigChange = (newConfig: Partial<BookmarkletConfig>) => {
     setConfig(prev => ({
       ...prev,
       ...newConfig

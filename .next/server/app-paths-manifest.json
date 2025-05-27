@@ -1,10 +1,6 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
+  "/bookmarklet/page": "app/bookmarklet/page.js",
   "/jelly/page": "app/jelly/page.js",
   "/bingdun/page": "app/bingdun/page.js",
-  "/banner/page": "app/banner/page.js",
-  "/viewext/page": "app/viewext/page.js",
-  "/bookmarklet/page": "app/bookmarklet/page.js",
-  "/chatchan/page": "app/chatchan/page.js"
+  "/viewext/page": "app/viewext/page.js"
 }

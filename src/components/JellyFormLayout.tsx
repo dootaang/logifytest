@@ -191,7 +191,7 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
     onConfigChange({ wordReplacements: newReplacements });
   };
 
-  // 이미지 파일 업로드 처리
+  // 로컬 이미지 파일 업로드 처리
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -207,12 +207,7 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
         return;
       }
 
-      // 업로드 진행 상태 표시
-      const originalFileName = file.name;
-      console.log('이미지 업로드 시작:', originalFileName);
-
       try {
-        // 업로드 중 상태 표시
         const formData = new FormData();
         formData.append('file', file);
 
@@ -222,64 +217,21 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
         });
 
         const result = await response.json();
-        console.log('업로드 응답:', result);
 
         if (result.success && result.url) {
           handleInputChange('backgroundImage', result.url);
           setExtractedFromHtml(false);
-          alert('✅ 이미지가 성공적으로 업로드되었습니다!\n\n아카라이브 형식 URL이 생성되었습니다.');
-        } else {
-          // 업로드 실패 시 상세한 안내 제공
-          console.warn('업로드 실패:', result);
-          
-          let message = '⚠️ 아카라이브 이미지 업로드에 실패했습니다.\n\n';
-          
-          // 프록시 서버 오류인 경우 상세 정보 표시
-          if (result.details && result.details.proxyError) {
-            message += '🔍 오류 상세:\n';
-            message += `- ${result.details.reason}\n`;
-            if (result.details.solutions) {
-              message += '\n💡 해결 방법:\n';
-              result.details.solutions.forEach((solution: string) => {
-                message += `${solution}\n`;
-              });
-            }
-            message += '\n';
-          }
-          
-          message += '📌 권장 해결방법 (가장 확실한 방법):\n\n';
-          message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
-          message += '2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드\n';
-          message += '3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사\n';
-          message += '4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
-          message += '5️⃣ URL이 자동으로 추출되어 적용됩니다\n\n';
-          
-          if (!process.env.NEXT_PUBLIC_PROXY_URL) {
-            message += '🔧 개발자용 정보:\n';
-            message += '프록시 서버 설정 시 자동 업로드가 가능할 수 있습니다.\n';
-            message += '.env.local 파일에 NEXT_PUBLIC_PROXY_URL을 설정하세요.\n\n';
+          if (result.isDataUrl) {
+            alert('✅ 이미지가 성공적으로 업로드되었습니다!\n\n이미지가 base64 형태로 변환되어 복사 기능에서도 정상 작동합니다.');
           } else {
-            message += '⚙️ 프록시 서버 오류:\n';
-            message += '현재 프록시 서버에 문제가 있습니다. 직접 업로드를 이용해주세요.\n\n';
+            alert('✅ 이미지가 성공적으로 업로드되었습니다!');
           }
-          
-          message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
-          
-          alert(message);
+        } else {
+          alert('❌ 이미지 업로드에 실패했습니다. 다시 시도해주세요.');
         }
       } catch (error) {
-        console.error('업로드 네트워크 오류:', error);
-        
-        let message = '❌ 네트워크 오류가 발생했습니다.\n\n';
-        message += '📌 권장 해결방법:\n\n';
-        message += '1️⃣ 아카라이브 게시글 작성 화면으로 이동\n';
-        message += '2️⃣ 이미지를 업로드하여 에디터에 삽입\n';
-        message += '3️⃣ 생성된 이미지 HTML 코드를 복사\n';
-        message += '4️⃣ 여기서 "아카라이브 이미지 URL" 필드에 붙여넣기\n';
-        message += '5️⃣ URL이 자동으로 추출됩니다\n\n';
-        message += '🔗 아카라이브 글쓰기: https://arca.live/b/characterai/write';
-        
-        alert(message);
+        console.error('업로드 오류:', error);
+        alert('❌ 네트워크 오류가 발생했습니다. 다시 시도해주세요.');
       }
     }
   };
@@ -320,53 +272,55 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
           {/* 액션 버튼도 함께 최상단에 배치 */}
           <div className="button-group">
             <ModernButton onClick={onCopyHTML}>
-              📋 HTML 복사
+              ✨ 스타일 복사 (고급)
             </ModernButton>
             <ModernButton danger onClick={onReset}>
               🔄 초기화
             </ModernButton>
           </div>
+          <ModernHint>
+            💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
+          </ModernHint>
         </ModernSection>
 
         {/* 이미지 설정 */}
         <ModernSection title="🖼️ 이미지 설정">
-          {/* 이미지 업로드 */}
-          <ModernFormGroup label="📁 이미지 파일 업로드 (실험적 기능)">
+          {/* 로컬 이미지 업로드 */}
+          <ModernFormGroup label="📁 로컬 이미지 업로드">
             <input
               className="form-input"
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
+              style={{
+                padding: '12px',
+                border: '2px dashed var(--border-color)',
+                borderRadius: '8px',
+                backgroundColor: 'var(--bg-tertiary)',
+                cursor: 'pointer'
+              }}
             />
             <ModernHint>
-              ⚠️ 아카라이브 호환성 문제로 실패할 수 있습니다. 권장: 아카라이브에서 직접 업로드
+              💡 <strong>간편한 업로드:</strong> 이미지를 선택하면 base64로 변환되어 복사 기능에서도 정상 작동합니다!
+            </ModernHint>
+            <ModernHint>
+              📋 지원 형식: JPG, PNG, GIF, WebP (최대 5MB)
             </ModernHint>
           </ModernFormGroup>
 
           <ModernFormGroup>
-            <div className="divider-text">권장 방법</div>
+            <div className="divider-text">또는 외부 URL 사용</div>
           </ModernFormGroup>
 
-          <ModernFormGroup label="🔗 아카라이브 이미지 URL (권장)">
+          <ModernFormGroup label="🔗 외부 이미지 URL">
             <ModernInput
-              value={config.backgroundImage.startsWith('data:') ? '' : config.backgroundImage}
+              value={config.backgroundImage.startsWith('/uploads/') ? '' : config.backgroundImage}
               onChange={(value) => handleInputChange('backgroundImage', value)}
               onPaste={handlePaste}
-              placeholder="아카라이브 이미지 HTML 또는 URL을 입력하세요"
+              placeholder="외부 이미지 URL을 입력하세요"
             />
             <ModernHint>
-              💡 <strong>권장 방법:</strong> <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 글쓰기</a>에서 이미지 업로드 → HTML 코드 복사 → 여기에 붙여넣기
-            </ModernHint>
-            <ModernHint>
-              📋 아카라이브 이미지 HTML 형식: &lt;img src="//ac-p1.namu.la/..." /&gt;
-            </ModernHint>
-            <ModernHint>
-              <p><strong>📌 이미지 업로드 방법 (가장 확실한 방법):</strong></p>
-              <p>1️⃣ <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 게시글 작성 화면</a>으로 이동</p>
-              <p>2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드</p>
-              <p>3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사</p>
-              <p>4️⃣ 여기 "아카라이브 이미지 URL" 필드에 붙여넣기</p>
-              <p>5️⃣ URL이 자동으로 추출되어 적용됩니다</p>
+              💡 아카라이브, 이미지 호스팅 사이트 등의 이미지 URL을 사용할 수 있습니다.
             </ModernHint>
             {extractedFromHtml && (
               <ModernHint type="success">

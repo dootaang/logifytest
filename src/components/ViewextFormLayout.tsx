@@ -290,11 +290,15 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
               HTML 생성
             </ModernButton>
             <ModernButton onClick={onCopyHTML}>
-              복사
+              ✨ 스타일 복사 (고급)
             </ModernButton>
             <ModernButton onClick={onReset}>
               초기화
             </ModernButton>
+          </div>
+          
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
           </div>
         </div>
 

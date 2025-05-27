@@ -70,6 +70,8 @@ const BookmarkletGenerator = ({ config }: BookmarkletGeneratorProps) => {
     return protectedText;
   }
 
+
+
   const generateHTML = () => {
     const contentToProcess = config.content || ''
     const processedContent = applyWordReplacements(contentToProcess)

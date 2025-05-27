@@ -77,6 +77,7 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
   onReset
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
 
   // 다크모드 감지
   useEffect(() => {
@@ -139,41 +140,49 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
   // 이미지 파일 업로드 처리
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'backgroundImage' | 'profileImage') => {
     const file = e.target.files?.[0];
-    if (file) {
-      // 파일 크기 제한 (5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('이미지 파일 크기는 5MB 이하여야 합니다.');
-        return;
-      }
+    if (!file) return;
 
-      // 이미지 파일 타입 확인
-      if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드 가능합니다.');
-        return;
-      }
+    // 파일 크기 체크 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadStatus('❌ 파일 크기가 5MB를 초과합니다.');
+      return;
+    }
 
-      try {
-        // 업로드 중 상태 표시
-        const formData = new FormData();
-        formData.append('file', file);
+    // 파일 타입 체크
+    if (!file.type.startsWith('image/')) {
+      setUploadStatus('❌ 이미지 파일만 업로드 가능합니다.');
+      return;
+    }
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+    setUploadStatus('⏳ 업로드 중...');
 
-        const result = await response.json();
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-        if (result.success) {
-          handleInputChange(field, result.url);
-          alert('이미지가 성공적으로 업로드되었습니다!');
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        handleInputChange(field, data.url);
+        if (data.isDataUrl) {
+          setUploadStatus('✅ 업로드 성공! (base64 변환됨)');
         } else {
-          alert(result.error || '업로드에 실패했습니다.');
+          setUploadStatus('✅ 업로드 성공!');
         }
-      } catch (error) {
-        console.error('업로드 오류:', error);
-        alert('업로드 중 오류가 발생했습니다.');
+        
+        // 3초 후 상태 메시지 제거
+        setTimeout(() => setUploadStatus(''), 3000);
+      } else {
+        const errorData = await response.json();
+        setUploadStatus(`❌ 업로드 실패: ${errorData.error || '알 수 없는 오류'}`);
       }
+    } catch (error) {
+      console.error('업로드 오류:', error);
+      setUploadStatus('❌ 업로드 중 오류가 발생했습니다.');
     }
   };
 
@@ -217,7 +226,7 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
               </ModernFormGroup>
               <ModernFormGroup>
                 <ModernButton onClick={onCopyHTML}>
-                  📋 HTML 복사
+                  ✨ 스타일 복사 (고급)
                 </ModernButton>
               </ModernFormGroup>
               <ModernFormGroup>
@@ -226,6 +235,10 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
                 </ModernButton>
               </ModernFormGroup>
             </ModernFormRow>
+            
+            <ModernHint>
+              💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
+            </ModernHint>
           </ModernSection>
 
           {/* 디자인 테마 선택 섹션 */}
@@ -259,78 +272,141 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
 
           {/* 이미지 설정 섹션 */}
           <ModernSection title="🖼️ 이미지 설정">
-            <ModernFormGroup>
-              <ModernHint>
-                <p><strong>📌 이미지 업로드 방법 (가장 확실한 방법):</strong></p>
-                <p>1️⃣ <a href="https://arca.live/b/characterai/write" target="_blank" rel="noopener noreferrer" style={{color: '#3498db', textDecoration: 'underline'}}>아카라이브 게시글 작성 화면</a>으로 이동</p>
-                <p>2️⃣ 이미지를 드래그&드롭 또는 클릭하여 업로드</p>
-                <p>3️⃣ 에디터에 삽입된 이미지의 HTML 코드를 복사</p>
-                <p>4️⃣ 아래 "이미지 URL" 필드에 붙여넣기</p>
-                <p>5️⃣ URL이 자동으로 추출되어 적용됩니다</p>
-              </ModernHint>
+            {/* 배경 이미지 업로드 */}
+            <ModernFormGroup label="🖼️ 배경 이미지 - 로컬 업로드">
+              <div style={{
+                border: '2px dashed #cbd5e0',
+                borderRadius: '8px',
+                padding: '20px',
+                textAlign: 'center',
+                backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                transition: 'all 0.2s ease'
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'backgroundImage')}
+                  style={{ display: 'none' }}
+                  id="background-image-upload"
+                />
+                <label 
+                  htmlFor="background-image-upload"
+                  style={{
+                    cursor: 'pointer',
+                    display: 'block'
+                  }}
+                >
+                  <div style={{
+                    fontSize: '48px',
+                    marginBottom: '10px',
+                    color: isDarkMode ? '#a0aec0' : '#718096'
+                  }}>
+                    🖼️
+                  </div>
+                  <p style={{
+                    margin: '0 0 5px 0',
+                    fontWeight: 'bold',
+                    color: isDarkMode ? '#e2e8f0' : '#2d3748'
+                  }}>
+                    클릭하여 배경 이미지 선택
+                  </p>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '14px',
+                    color: isDarkMode ? '#a0aec0' : '#718096'
+                  }}>
+                    권장: 1400×400px | JPG, PNG, GIF 지원 (최대 5MB)
+                  </p>
+                </label>
+              </div>
+              {uploadStatus && (
+                <div style={{
+                  marginTop: '10px',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  backgroundColor: uploadStatus.includes('성공') ? '#c6f6d5' : '#fed7d7',
+                  color: uploadStatus.includes('성공') ? '#2f855a' : '#c53030',
+                  fontSize: '14px'
+                }}>
+                  {uploadStatus}
+                </div>
+              )}
             </ModernFormGroup>
-            
-            <ModernFormGroup label="배경 이미지 파일 업로드">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'backgroundImage')}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: `1px solid ${STYLES.border}`,
-                  borderRadius: `${STYLES.radius_normal}px`,
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  color: isDarkMode ? '#e4e6eb' : STYLES.text,
-                  fontSize: `${STYLES.font_size_normal}px`
-                }}
-              />
-              <ModernHint>
-                <p>💡 권장 사이즈: 1400px × 400px | 최대 5MB</p>
-              </ModernHint>
-            </ModernFormGroup>
-            
-            <ModernFormGroup label="배경 이미지 URL">
+
+            <ModernFormGroup label="🌐 배경 이미지 - 외부 URL">
               <ModernInput
                 value={config.backgroundImage}
                 onChange={(value) => handleInputChange('backgroundImage', value)}
                 onPaste={(e) => handlePaste(e, 'backgroundImage')}
-                placeholder="배경 이미지 URL을 입력하세요"
+                placeholder="배경 이미지 URL 또는 HTML 코드"
               />
               <ModernHint>
-                <p>💡 아카라이브 이미지 HTML도 자동으로 URL 추출됩니다</p>
+                <p><strong>💡 사용 방법:</strong></p>
+                <p>• 이미지 URL을 직접 입력하거나</p>
+                <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
               </ModernHint>
             </ModernFormGroup>
 
-            <ModernFormGroup label="프로필 이미지 파일 업로드">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'profileImage')}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: `1px solid ${STYLES.border}`,
-                  borderRadius: `${STYLES.radius_normal}px`,
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  color: isDarkMode ? '#e4e6eb' : STYLES.text,
-                  fontSize: `${STYLES.font_size_normal}px`
-                }}
-              />
-              <ModernHint>
-                <p>💡 권장 사이즈: 200px × 200px (정사각형) | 최대 5MB</p>
-              </ModernHint>
+            {/* 프로필 이미지 업로드 */}
+            <ModernFormGroup label="👤 프로필 이미지 - 로컬 업로드">
+              <div style={{
+                border: '2px dashed #cbd5e0',
+                borderRadius: '8px',
+                padding: '20px',
+                textAlign: 'center',
+                backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                transition: 'all 0.2s ease'
+              }}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e, 'profileImage')}
+                  style={{ display: 'none' }}
+                  id="profile-image-upload"
+                />
+                <label 
+                  htmlFor="profile-image-upload"
+                  style={{
+                    cursor: 'pointer',
+                    display: 'block'
+                  }}
+                >
+                  <div style={{
+                    fontSize: '48px',
+                    marginBottom: '10px',
+                    color: isDarkMode ? '#a0aec0' : '#718096'
+                  }}>
+                    👤
+                  </div>
+                  <p style={{
+                    margin: '0 0 5px 0',
+                    fontWeight: 'bold',
+                    color: isDarkMode ? '#e2e8f0' : '#2d3748'
+                  }}>
+                    클릭하여 프로필 이미지 선택
+                  </p>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '14px',
+                    color: isDarkMode ? '#a0aec0' : '#718096'
+                  }}>
+                    권장: 200×200px (정사각형) | JPG, PNG, GIF 지원 (최대 5MB)
+                  </p>
+                </label>
+              </div>
             </ModernFormGroup>
 
-            <ModernFormGroup label="프로필 이미지 URL">
+            <ModernFormGroup label="🌐 프로필 이미지 - 외부 URL">
               <ModernInput
                 value={config.profileImage}
                 onChange={(value) => handleInputChange('profileImage', value)}
                 onPaste={(e) => handlePaste(e, 'profileImage')}
-                placeholder="프로필 이미지 URL을 입력하세요"
+                placeholder="프로필 이미지 URL 또는 HTML 코드"
               />
               <ModernHint>
-                <p>💡 아카라이브 이미지 HTML도 자동으로 URL 추출됩니다</p>
+                <p><strong>💡 사용 방법:</strong></p>
+                <p>• 이미지 URL을 직접 입력하거나</p>
+                <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
               </ModernHint>
             </ModernFormGroup>
           </ModernSection>

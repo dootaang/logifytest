@@ -90,7 +90,11 @@ const BannerGeneratorV2 = ({ config }: BannerGeneratorV2Props) => {
     if (url.startsWith('data:')) {
       return url
     }
-    // 절대 URL (//로 시작)은 https 프로토콜 추가
+    // 아카라이브 이미지 URL (//ac-p1.namu.la 또는 //ac.namu.la)은 원본 형태 유지
+    if (url.startsWith('//') && (url.includes('ac-p1.namu.la') || url.includes('ac.namu.la'))) {
+      return url  // 아카라이브 URL은 원본 형태 그대로 사용
+    }
+    // 기타 절대 URL (//로 시작)은 https 프로토콜 추가
     if (url.startsWith('//')) {
       return 'https:' + url
     }
@@ -109,6 +113,7 @@ const BannerGeneratorV2 = ({ config }: BannerGeneratorV2Props) => {
     return url
   }
 
+  // 미리보기용 이미지 URL 생성 (프록시를 통해 CORS 우회)
   const getPreviewImageUrl = (url: string): string => {
     const normalizedUrl = normalizeImageUrl(url);
     
@@ -124,7 +129,9 @@ const BannerGeneratorV2 = ({ config }: BannerGeneratorV2Props) => {
     
     // 아카라이브 이미지인 경우 프록시를 통해 로드
     if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
-      return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
+      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
     }
     
     // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)

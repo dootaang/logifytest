@@ -5,6 +5,7 @@ import Navigation from '@/components/Navigation'
 import BannerFormLayout from '@/components/BannerFormLayout'
 import BannerGeneratorV2 from '@/generators/BannerGeneratorV2'
 import { DarkModeUtils } from '@/utils/styles'
+import { copyToAdvancedClipboard, copyToSimpleClipboard } from '@/utils/advancedClipboard'
 
 interface WordReplacement {
   from: string;
@@ -216,11 +217,24 @@ export default function BannerPage() {
     setGeneratedHTML(html)
   }
 
-  const handleCopyHTML = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(generatedHTML).then(() => {
-        alert('배너형 HTML 코드가 클립보드에 복사되었습니다!')
-      })
+  const handleCopyHTML = async () => {
+    try {
+      // 고급 클립보드 복사 시도 (HTML + 이미지)
+      const success = await copyToAdvancedClipboard({
+        htmlContent: generatedHTML,
+        plainTextContent: generatedHTML,
+        title: '배너형 로그',
+        author: '배너형 생성기'
+      });
+
+      if (success) {
+        alert('🎉 배너형 로그가 스타일과 이미지와 함께 클립보드에 복사되었습니다!\n\n이제 글쓰기 에디터에 붙여넣기하면 디자인이 그대로 적용됩니다.');
+      } else {
+        alert('📋 배너형 HTML 코드가 클립보드에 복사되었습니다!\n\n(고급 복사 기능을 지원하지 않는 브라우저입니다)');
+      }
+    } catch (error) {
+      console.error('클립보드 복사 실패:', error);
+      alert('❌ 클립보드 복사에 실패했습니다. 다시 시도해주세요.');
     }
   }
 

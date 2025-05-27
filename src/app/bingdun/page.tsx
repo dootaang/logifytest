@@ -157,11 +157,35 @@ export default function BingdunPage() {
     setGeneratedHTML(html)
   }
 
-  const handleCopyHTML = () => {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(generatedHTML).then(() => {
-        alert('빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+  const handleCopyHTML = async () => {
+    try {
+      const { copyToAdvancedClipboard } = await import('@/utils/advancedClipboard')
+      const success = await copyToAdvancedClipboard({
+        htmlContent: generatedHTML,
+        plainTextContent: generatedHTML
       })
+      
+      if (success) {
+        alert('✨ 빙둔형 스타일이 고급 복사되었습니다! 글쓰기 에디터에 붙여넣기하면 디자인과 이미지가 함께 적용됩니다.')
+      } else {
+        // 폴백: 일반 텍스트 복사
+        if (typeof navigator !== 'undefined') {
+          await navigator.clipboard.writeText(generatedHTML)
+          alert('📋 빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+        }
+      }
+    } catch (error) {
+      console.error('복사 중 오류:', error)
+      // 폴백: 일반 텍스트 복사
+      if (typeof navigator !== 'undefined') {
+        try {
+          await navigator.clipboard.writeText(generatedHTML)
+          alert('📋 빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+        } catch (fallbackError) {
+          console.error('폴백 복사도 실패:', fallbackError)
+          alert('❌ 복사에 실패했습니다.')
+        }
+      }
     }
   }
 
