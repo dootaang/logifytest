@@ -12,6 +12,12 @@ interface WordReplacement {
   to: string;
 }
 
+// 채팅 섹션 인터페이스 추가
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 interface BookmarkletConfig {
   content: string;
   backgroundColor: string;
@@ -25,6 +31,8 @@ interface BookmarkletConfig {
   padding: number;
   boxShadow: string;
   wordReplacements: WordReplacement[];
+  // chatSections 추가
+  chatSections?: ChatSection[];
 }
 
 // 북마클릿형 기본 설정
@@ -52,7 +60,9 @@ const defaultBookmarkletConfig = {
     { from: '그는', to: '그녀는' },
     { from: '', to: '' },
     { from: '', to: '' }
-  ] as WordReplacement[]
+  ] as WordReplacement[],
+  // chatSections 기본값 추가
+  chatSections: [] as ChatSection[]
 }
 
 export default function BookmarkletPage() {

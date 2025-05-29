@@ -44,11 +44,11 @@ const generators = [
     color: STYLES.primary
   },
   {
-    id: 'bingdun',
-    name: '빙둔형',
-    icon: '🏂',
-    path: '/bingdun',
-    description: '초기 로그제조기+α',
+    id: 'card',
+    name: '카드형',
+    icon: '🃊',
+    path: '/card',
+    description: '배경과 프사',
     longDescription: '새로 제공받은 디자인. 누구나 디자인 제공 환영.',
     color: STYLES.secondary
   },

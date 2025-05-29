@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   ModernButton,
   ModernInput,
@@ -15,14 +15,19 @@ import {
   ModernSelect
 } from './ModernComponents'
 import { STYLES } from '@/utils/styles'
-import BingdunGenerator from '@/generators/BingdunGenerator';
+import CardGenerator from '@/generators/CardGenerator';
 
 interface WordReplacement {
   from: string;
   to: string;
 }
 
-interface BingdunConfig {
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
+interface CardConfig {
   backgroundImage: string;
   profileImage: string;
   leftText: string;
@@ -57,18 +62,21 @@ interface BingdunConfig {
   tagBorderColor: string;
   tagStyle: 'filled' | 'outline';
   hideProfileSection: boolean;
+  hideBackgroundImage: boolean;
+  hideProfileImage: boolean;
+  chatSections: ChatSection[];
 }
 
-interface BingdunFormLayoutProps {
-  config: BingdunConfig;
-  onConfigChange: (newConfig: Partial<BingdunConfig>) => void;
+interface CardFormLayoutProps {
+  config: CardConfig;
+  onConfigChange: (newConfig: Partial<CardConfig>) => void;
   generatedHTML: string;
   onGenerateHTML: () => void;
   onCopyHTML: () => void;
   onReset: () => void;
 }
 
-const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
+const CardFormLayout: React.FC<CardFormLayoutProps> = ({
   config,
   onConfigChange,
   generatedHTML,
@@ -78,6 +86,86 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  
+  // localStorage 기반 이미지 히스토리 (영구 저장, base64 제외)
+  const [backgroundImageHistory, setBackgroundImageHistory] = useState<string[]>([]);
+  const [profileImageHistory, setProfileImageHistory] = useState<string[]>([]);
+
+  // 채팅 섹션 상태 추가
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
+  
+  // 텍스트에어리어 참조 추가
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+  
+  // 자동 저장 키 상수 추가
+  const AUTOSAVE_PREFIX = 'autoSavedCard_v1_';
+
+  // localStorage에서 히스토리 로드 및 저장 함수들
+  const loadImageHistory = () => {
+    try {
+      const bgHistory = localStorage.getItem('cardgen_background_history');
+      const profileHistory = localStorage.getItem('cardgen_profile_history');
+      
+      if (bgHistory) {
+        const parsed = JSON.parse(bgHistory);
+        if (Array.isArray(parsed)) {
+          setBackgroundImageHistory(parsed.slice(0, 2)); // 최대 2개로 제한
+        }
+      }
+      
+      if (profileHistory) {
+        const parsed = JSON.parse(profileHistory);
+        if (Array.isArray(parsed)) {
+          setProfileImageHistory(parsed.slice(0, 2)); // 최대 2개로 제한
+        }
+      }
+    } catch (error) {
+      console.warn('히스토리 로드 실패:', error);
+      // 오류 발생 시 빈 배열로 초기화
+      setBackgroundImageHistory([]);
+      setProfileImageHistory([]);
+    }
+  };
+
+  const saveImageHistory = (type: 'background' | 'profile', history: string[]) => {
+    try {
+      const key = type === 'background' ? 'cardgen_background_history' : 'cardgen_profile_history';
+      const filteredHistory = history.filter(url => url && !url.startsWith('data:')); // base64 제외
+      
+      // localStorage 용량 체크
+      const testData = JSON.stringify(filteredHistory.slice(0, 2));
+      if (testData.length > 1000) { // 1KB 제한
+        console.warn('히스토리 데이터가 너무 큽니다.');
+        return;
+      }
+      
+      localStorage.setItem(key, JSON.stringify(filteredHistory.slice(0, 2)));
+    } catch (error) {
+      console.warn('히스토리 저장 실패:', error);
+      
+      // 용량 초과 시 자동 정리
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        try {
+          // 기존 히스토리 삭제 후 새로운 항목만 저장
+          localStorage.removeItem('cardgen_background_history');
+          localStorage.removeItem('cardgen_profile_history');
+          
+          const key = type === 'background' ? 'cardgen_background_history' : 'cardgen_profile_history';
+          const filteredHistory = history.filter(url => url && !url.startsWith('data:')).slice(0, 1); // 1개만 저장
+          localStorage.setItem(key, JSON.stringify(filteredHistory));
+        } catch (retryError) {
+          console.warn('히스토리 정리 후 저장도 실패:', retryError);
+        }
+      }
+    }
+  };
+
+  // 컴포넌트 마운트 시 히스토리 로드
+  useEffect(() => {
+    loadImageHistory();
+  }, []);
 
   // 다크모드 감지
   useEffect(() => {
@@ -93,12 +181,29 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
     return () => darkModeQuery.removeEventListener('change', checkDarkMode)
   }, [])
 
-  const handleInputChange = (field: keyof BingdunConfig, value: any) => {
+  const handleInputChange = (field: keyof CardConfig, value: any) => {
     let finalValue = value;
 
     // 이미지 필드이고 HTML 형태인 경우 URL 추출
     if ((field === 'backgroundImage' || field === 'profileImage') && isHtmlImageTag(value)) {
       finalValue = extractImageUrlFromHtml(value);
+    }
+
+    // 이미지 URL이 변경되고 base64가 아닌 경우 localStorage 히스토리에 추가
+    if ((field === 'backgroundImage' || field === 'profileImage') && 
+        finalValue && 
+        finalValue !== config[field] && 
+        !finalValue.startsWith('data:')) {
+      
+      if (field === 'backgroundImage') {
+        const newHistory = [finalValue, ...backgroundImageHistory.filter(url => url !== finalValue)].slice(0, 2);
+        setBackgroundImageHistory(newHistory);
+        saveImageHistory('background', newHistory);
+      } else {
+        const newHistory = [finalValue, ...profileImageHistory.filter(url => url !== finalValue)].slice(0, 2);
+        setProfileImageHistory(newHistory);
+        saveImageHistory('profile', newHistory);
+      }
     }
 
     onConfigChange({ [field]: finalValue });
@@ -167,9 +272,12 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
 
       if (response.ok) {
         const data = await response.json();
+        
+        // 현재 이미지 설정
         handleInputChange(field, data.url);
+        
         if (data.isDataUrl) {
-          setUploadStatus('✅ 업로드 성공! (base64 변환됨)');
+          setUploadStatus('✅ 업로드 성공! (base64 변환됨 - 히스토리 저장 안됨)');
         } else {
           setUploadStatus('✅ 업로드 성공!');
         }
@@ -186,6 +294,106 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
     }
   };
 
+  // 이미지 삭제 함수
+  const handleImageDelete = (field: 'backgroundImage' | 'profileImage') => {
+    handleInputChange(field, '');
+  };
+
+  // 히스토리에서 이미지 선택 함수
+  const handleHistoryImageSelect = (field: 'backgroundImage' | 'profileImage', imageUrl: string) => {
+    handleInputChange(field, imageUrl);
+  };
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 채팅 섹션 업데이트
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
+    setChatSections(newSections);
+    
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
+    // 섹션 배열을 config에 전달
+    onConfigChange({ 
+      content: newSections.map(section => section.content).filter(c => c.trim()).join('\n\n'),
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `card_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 내용 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 내용 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    onConfigChange({ 
+      content: newSections.map(section => section.content).filter(c => c.trim()).join('\n\n'),
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    onConfigChange({ 
+      content: newSections.map(section => section.content).filter(c => c.trim()).join('\n\n'),
+      chatSections: newSections 
+    });
+  };
+
   // 실시간 미리보기 업데이트
   useEffect(() => {
     onGenerateHTML();
@@ -193,7 +401,7 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
 
   // 미리보기용 HTML 생성
   const generatePreviewHTML = () => {
-    const generator = BingdunGenerator({ config });
+    const generator = CardGenerator({ config });
     return generator.generatePreviewHTML ? generator.generatePreviewHTML() : generator.generateHTML();
   };
 
@@ -201,21 +409,73 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
     <div className="container">
       <div className="main-layout">
         <div className="settings-panel">
-          {/* 헤더 */}
-          <div className="header">
-            <h1>🎭 빙둔형 생성기</h1>
-            <p>캐릭터 중심의 아름다운 빙둔 스타일 로그를 생성합니다</p>
-          </div>
-
           {/* 본문 내용 섹션 */}
           <ModernSection title="📄 본문 내용">
-            <ModernFormGroup label="본문 내용">
-              <ModernTextarea
-                value={config.content}
-                onChange={(value) => handleInputChange('content', value)}
-                placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
-                rows={12}
-              />
+            <ModernHint>
+              <strong>본문 작성 안내</strong>
+              <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                - 대화 부분은 큰따옴표 "텍스트" 또는 둥근따옴표 "텍스트"로 감싸주세요<br />
+                - 속마음 부분은 작은따옴표 '텍스트'로 감싸주세요<br />
+                - 여러 개의 본문 섹션을 추가해서 구분하여 작성할 수 있습니다
+              </div>
+            </ModernHint>
+
+            {/* 본문 섹션들 */}
+            {chatSections.map((section, index) => (
+              <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                {/* 섹션 헤더 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    본문 내용 {chatSections.length > 1 ? `${index + 1}` : ''}
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'up')}
+                      disabled={index === 0}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▲
+                    </ModernButton>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'down')}
+                      disabled={index === chatSections.length - 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▼
+                    </ModernButton>
+                    <ModernButton
+                      danger
+                      onClick={() => removeChatSection(section.id)}
+                      disabled={chatSections.length <= 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      X
+                    </ModernButton>
+                  </div>
+                </div>
+
+                {/* 텍스트에어리어 */}
+                <textarea
+                  ref={(el) => {
+                    if (el) {
+                      textareaRefs.current[section.id] = el;
+                    }
+                  }}
+                  value={section.content}
+                  onChange={(e) => updateChatSection(section.id, e.target.value)}
+                  placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
+                  rows={8}
+                  className="form-input form-textarea"
+                  style={{ width: '100%', minHeight: '200px' }}
+                />
+              </div>
+            ))}
+
+            {/* 본문 섹션 추가 버튼 */}
+            <ModernFormGroup>
+              <ModernButton onClick={addChatSection}>
+                본문 섹션 추가
+              </ModernButton>
             </ModernFormGroup>
             
             <ModernFormRow>
@@ -266,6 +526,28 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
               />
               <ModernHint>
                 <p>💡 체크하면 배경이미지, 프로필이미지, 캐릭터 정보, 태그가 모두 숨겨집니다.</p>
+              </ModernHint>
+            </ModernFormGroup>
+
+            <ModernFormGroup>
+              <ModernCheckbox
+                checked={config.hideBackgroundImage}
+                onChange={(checked) => handleInputChange('hideBackgroundImage', checked)}
+                label="배경 이미지만 숨기기"
+              />
+              <ModernHint>
+                <p>💡 체크하면 배경 이미지만 숨겨지고 프로필 이미지와 캐릭터 정보는 표시됩니다.</p>
+              </ModernHint>
+            </ModernFormGroup>
+
+            <ModernFormGroup>
+              <ModernCheckbox
+                checked={config.hideProfileImage}
+                onChange={(checked) => handleInputChange('hideProfileImage', checked)}
+                label="프로필 이미지만 숨기기"
+              />
+              <ModernHint>
+                <p>💡 체크하면 프로필 이미지만 숨겨지고 배경 이미지와 캐릭터 정보는 표시됩니다.</p>
               </ModernHint>
             </ModernFormGroup>
           </ModernSection>
@@ -347,6 +629,107 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
               </ModernHint>
             </ModernFormGroup>
 
+            {/* 배경 이미지 관리 */}
+            {config.backgroundImage && (
+              <ModernFormGroup label="🖼️ 현재 배경 이미지">
+                <div style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <img 
+                      src={config.backgroundImage} 
+                      alt="배경 이미지 미리보기"
+                      style={{
+                        width: '60px',
+                        height: '30px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '1px solid #cbd5e0'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span style={{
+                      flex: 1,
+                      fontSize: '14px',
+                      color: isDarkMode ? '#a0aec0' : '#718096',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {config.backgroundImage.length > 50 
+                        ? config.backgroundImage.substring(0, 50) + '...' 
+                        : config.backgroundImage}
+                    </span>
+                  </div>
+                  <ModernButton 
+                    danger 
+                    onClick={() => handleImageDelete('backgroundImage')}
+                    style={{ fontSize: '12px', padding: '4px 8px' }}
+                  >
+                    🗑️ 삭제
+                  </ModernButton>
+                </div>
+              </ModernFormGroup>
+            )}
+
+            {/* 배경 이미지 히스토리 */}
+            {backgroundImageHistory.length > 0 && (
+              <ModernFormGroup label="📸 최근 배경 이미지">
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: '10px'
+                }}>
+                  {backgroundImageHistory.map((imageUrl, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleHistoryImageSelect('backgroundImage', imageUrl)}
+                      style={{
+                        cursor: 'pointer',
+                        border: config.backgroundImage === imageUrl ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <img 
+                        src={imageUrl} 
+                        alt={`히스토리 이미지 ${index + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '50px',
+                          objectFit: 'cover',
+                          borderRadius: '4px',
+                          marginBottom: '4px'
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div style={{
+                        fontSize: '11px',
+                        color: isDarkMode ? '#a0aec0' : '#718096',
+                        textAlign: 'center'
+                      }}>
+                        {index === 0 ? '최신' : '이전'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <ModernHint>
+                  <p>💡 클릭하면 해당 이미지로 바로 변경됩니다</p>
+                  <p>💾 히스토리는 브라우저에 영구 저장됩니다 (웹사이트를 껐다 켜도 유지)</p>
+                  <p>📝 base64 이미지는 용량 절약을 위해 히스토리에 저장되지 않습니다</p>
+                </ModernHint>
+              </ModernFormGroup>
+            )}
+
             {/* 프로필 이미지 업로드 */}
             <ModernFormGroup label="👤 프로필 이미지 - 로컬 업로드">
               <div style={{
@@ -409,6 +792,109 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
                 <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
               </ModernHint>
             </ModernFormGroup>
+
+            {/* 프로필 이미지 관리 */}
+            {config.profileImage && (
+              <ModernFormGroup label="👤 현재 프로필 이미지">
+                <div style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <img 
+                      src={config.profileImage} 
+                      alt="프로필 이미지 미리보기"
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        objectFit: 'cover',
+                        borderRadius: '50%',
+                        border: '1px solid #cbd5e0'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span style={{
+                      flex: 1,
+                      fontSize: '14px',
+                      color: isDarkMode ? '#a0aec0' : '#718096',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {config.profileImage.length > 50 
+                        ? config.profileImage.substring(0, 50) + '...' 
+                        : config.profileImage}
+                    </span>
+                  </div>
+                  <ModernButton 
+                    danger 
+                    onClick={() => handleImageDelete('profileImage')}
+                    style={{ fontSize: '12px', padding: '4px 8px' }}
+                  >
+                    🗑️ 삭제
+                  </ModernButton>
+                </div>
+              </ModernFormGroup>
+            )}
+
+            {/* 프로필 이미지 히스토리 */}
+            {profileImageHistory.length > 0 && (
+              <ModernFormGroup label="📸 최근 프로필 이미지">
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: '10px'
+                }}>
+                  {profileImageHistory.map((imageUrl, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleHistoryImageSelect('profileImage', imageUrl)}
+                      style={{
+                        cursor: 'pointer',
+                        border: config.profileImage === imageUrl ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        padding: '8px',
+                        backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <img 
+                        src={imageUrl} 
+                        alt={`히스토리 이미지 ${index + 1}`}
+                        style={{
+                          width: '80px',
+                          height: '80px',
+                          objectFit: 'cover',
+                          borderRadius: '50%',
+                          marginBottom: '4px',
+                          display: 'block',
+                          margin: '0 auto 4px auto'
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <div style={{
+                        fontSize: '11px',
+                        color: isDarkMode ? '#a0aec0' : '#718096',
+                        textAlign: 'center'
+                      }}>
+                        {index === 0 ? '최신' : '이전'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <ModernHint>
+                  <p>💡 클릭하면 해당 이미지로 바로 변경됩니다</p>
+                  <p>💾 히스토리는 브라우저에 영구 저장됩니다 (웹사이트를 껐다 켜도 유지)</p>
+                  <p>📝 base64 이미지는 용량 절약을 위해 히스토리에 저장되지 않습니다</p>
+                </ModernHint>
+              </ModernFormGroup>
+            )}
           </ModernSection>
 
           {/* 캐릭터 정보 섹션 */}
@@ -651,7 +1137,7 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
         {/* 미리보기 패널 */}
         <div className="preview-panel">
           <div className="preview-header">
-            <h3 className="preview-title">🎭 빙둔형 미리보기</h3>
+            <h3 className="preview-title">미리보기</h3>
           </div>
           
           <div className="preview-container">
@@ -675,4 +1161,4 @@ const BingdunFormLayout: React.FC<BingdunFormLayoutProps> = ({
   );
 };
 
-export default BingdunFormLayout; 
+export default CardFormLayout; 

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
-import BingdunFormLayout from '@/components/BingdunFormLayout'
-import BingdunGenerator from '@/generators/BingdunGenerator'
+import CardFormLayout from '@/components/CardFormLayout'
+import CardGenerator from '@/generators/CardGenerator'
 import { DarkModeUtils } from '@/utils/styles'
 
 interface WordReplacement {
@@ -11,8 +11,8 @@ interface WordReplacement {
   to: string;
 }
 
-// 빙둔형 기본 설정
-const defaultBingdunConfig = {
+// 카드형 기본 설정
+const defaultCardConfig = {
   backgroundImage: '//ac.namu.la/20250524sac/e9f61a7d8296cebf91c7f24993a7dfbb60397526fc1bace99002290ec003210d.png?expires=1748181064&key=OlrYFmy3pBJGG6ALSRNqkQ',
   profileImage: '//ac.namu.la/20250524sac/a1dad3ef01eed80f878d3c3232020367f89ca1b3cce2b29235e3982fdbbf559d.png?expires=1748181064&key=zHAFS2P_g7w71aZW2j51fA',
   leftText: '얼터네이트 헌터즈',
@@ -31,7 +31,7 @@ const defaultBingdunConfig = {
   lineHeight: 1.75,
   paragraphIndent: false,
   selectedTheme: 'light',
-  selectedGenerator: 'bingdun',
+  selectedGenerator: 'card',
   wordReplacements: [
     { from: '', to: '' },
     { from: '', to: '' },
@@ -62,42 +62,70 @@ const defaultBingdunConfig = {
   tagCount: 3,
   tagBorderColor: '#ffffff',
   tagStyle: 'outline' as const,
-  hideProfileSection: false
+  hideProfileSection: false,
+  hideBackgroundImage: false,
+  hideProfileImage: false,
+  chatSections: []
 }
 
-export default function BingdunPage() {
-  const [config, setConfig] = useState(defaultBingdunConfig)
+export default function CardPage() {
+  const [config, setConfig] = useState(defaultCardConfig)
   const [generatedHTML, setGeneratedHTML] = useState('')
 
   // localStorage에서 설정 불러오기
   const loadConfig = () => {
     try {
       if (typeof window !== 'undefined') {
-        const savedConfig = localStorage.getItem('bingdunConfig')
+        const savedConfig = localStorage.getItem('cardConfig')
         if (savedConfig) {
           const parsedConfig = JSON.parse(savedConfig)
           return {
-            ...defaultBingdunConfig,
+            ...defaultCardConfig,
             ...parsedConfig,
             selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light'
           }
         }
       }
-      return { ...defaultBingdunConfig, selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light' }
+      return { ...defaultCardConfig, selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light' }
     } catch (error) {
-      console.error('빙둔 설정을 불러오는 중 오류 발생:', error)
-      return { ...defaultBingdunConfig, selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light' }
+      console.error('카드 설정을 불러오는 중 오류 발생:', error)
+      return { ...defaultCardConfig, selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light' }
     }
   }
 
-  // localStorage에 설정 저장하기
+  // localStorage에 설정 저장하기 (base64 이미지 제외하여 용량 절약)
   const saveConfig = (newConfig: any) => {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('bingdunConfig', JSON.stringify(newConfig))
+        // base64 이미지는 localStorage에 저장하지 않음 (용량 절약)
+        const configToSave = {
+          ...newConfig,
+          backgroundImage: newConfig.backgroundImage?.startsWith('data:') ? '' : newConfig.backgroundImage,
+          profileImage: newConfig.profileImage?.startsWith('data:') ? '' : newConfig.profileImage
+        };
+        
+        // JSON 문자열 크기 체크 (5MB 제한)
+        const configString = JSON.stringify(configToSave);
+        const sizeInMB = new Blob([configString]).size / (1024 * 1024);
+        
+        if (sizeInMB > 5) {
+          console.warn('설정 데이터가 너무 큽니다. 저장을 건너뜁니다.');
+          return;
+        }
+        
+        localStorage.setItem('cardConfig', configString);
       }
     } catch (error) {
-      console.error('빙둔 설정을 저장하는 중 오류 발생:', error)
+      console.error('카드 설정을 저장하는 중 오류 발생:', error);
+      // 용량 초과 시 localStorage 초기화 후 재시도
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        try {
+          localStorage.removeItem('cardConfig');
+          console.log('localStorage를 초기화했습니다.');
+        } catch (clearError) {
+          console.error('localStorage 초기화 실패:', clearError);
+        }
+      }
     }
   }
 
@@ -138,7 +166,7 @@ export default function BingdunPage() {
 
   // 설정이 변경될 때마다 자동 HTML 생성
   useEffect(() => {
-    const generator = BingdunGenerator({ config })
+    const generator = CardGenerator({ config })
     const html = generator.generateHTML()
     setGeneratedHTML(html)
   }, [config])
@@ -152,7 +180,7 @@ export default function BingdunPage() {
   }
 
   const handleGenerateHTML = () => {
-    const generator = BingdunGenerator({ config })
+    const generator = CardGenerator({ config })
     const html = generator.generateHTML()
     setGeneratedHTML(html)
   }
@@ -166,12 +194,12 @@ export default function BingdunPage() {
       })
       
       if (success) {
-        alert('✨ 빙둔형 스타일이 고급 복사되었습니다! 글쓰기 에디터에 붙여넣기하면 디자인과 이미지가 함께 적용됩니다.')
+        alert('✨ 카드형 스타일이 고급 복사되었습니다! 글쓰기 에디터에 붙여넣기하면 디자인과 이미지가 함께 적용됩니다.')
       } else {
         // 폴백: 일반 텍스트 복사
         if (typeof navigator !== 'undefined') {
           await navigator.clipboard.writeText(generatedHTML)
-          alert('📋 빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+          alert('📋 카드형 HTML 코드가 클립보드에 복사되었습니다!')
         }
       }
     } catch (error) {
@@ -180,7 +208,7 @@ export default function BingdunPage() {
       if (typeof navigator !== 'undefined') {
         try {
           await navigator.clipboard.writeText(generatedHTML)
-          alert('📋 빙둔형 HTML 코드가 클립보드에 복사되었습니다!')
+          alert('📋 카드형 HTML 코드가 클립보드에 복사되었습니다!')
         } catch (fallbackError) {
           console.error('폴백 복사도 실패:', fallbackError)
           alert('❌ 복사에 실패했습니다.')
@@ -190,9 +218,9 @@ export default function BingdunPage() {
   }
 
   const handleReset = () => {
-    if (typeof window !== 'undefined' && confirm('빙둔형 설정을 기본값으로 초기화하시겠습니까?')) {
+    if (typeof window !== 'undefined' && confirm('카드형 설정을 기본값으로 초기화하시겠습니까?')) {
       const resetConfig = { 
-        ...defaultBingdunConfig, 
+        ...defaultCardConfig, 
         selectedTheme: DarkModeUtils.getSystemDarkMode() ? 'dark' : 'light' 
       }
       setConfig(resetConfig)
@@ -201,21 +229,21 @@ export default function BingdunPage() {
   }
 
   return (
-    <div className="bingdun-page">
-      <Navigation currentGenerator="bingdun" />
+    <div className="card-page">
+      <Navigation currentGenerator="card" />
       
       <div className="page-container">
         <div className="page-header">
           <h1 className="page-title">
-            <span className="page-icon">🏂</span>
-            빙둔형 로그 생성기
+            <span className="page-icon">🃊</span>
+            카드형 로그 생성기
           </h1>
           <p className="page-description">
-            클래식한 스타일에 현대적 기능을 더한 로그를 생성합니다.
+            Design by chanrum
           </p>
         </div>
 
-        <BingdunFormLayout
+        <CardFormLayout
           config={config}
           onConfigChange={handleConfigChange}
           generatedHTML={generatedHTML}
@@ -226,7 +254,7 @@ export default function BingdunPage() {
       </div>
 
       <style jsx>{`
-        .bingdun-page {
+        .card-page {
           min-height: 100vh;
           background: var(--bg-primary);
           color: var(--text-primary);

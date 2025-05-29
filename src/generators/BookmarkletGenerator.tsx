@@ -5,6 +5,12 @@ interface WordReplacement {
   to: string;
 }
 
+// 채팅 섹션 인터페이스 추가
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 interface BookmarkletConfig {
   content: string;
   backgroundColor: string;
@@ -18,6 +24,8 @@ interface BookmarkletConfig {
   padding: number;
   boxShadow: string;
   wordReplacements: WordReplacement[];
+  // chatSections 추가
+  chatSections?: ChatSection[];
 }
 
 interface BookmarkletGeneratorProps {
@@ -70,19 +78,12 @@ const BookmarkletGenerator = ({ config }: BookmarkletGeneratorProps) => {
     return protectedText;
   }
 
-
-
-  const generateHTML = () => {
-    const contentToProcess = config.content || ''
-    const processedContent = applyWordReplacements(contentToProcess)
-    
-    if (!processedContent || typeof processedContent !== 'string') {
-      return `<div style="max-width: ${config.containerWidth}px; border-radius: ${config.borderRadius}px; margin: 0 auto; padding: ${config.padding}rem; box-shadow: ${config.boxShadow}; background-color: ${config.backgroundColor}; color: ${config.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};">
-
-\t<p>내용을 입력해주세요.</p>
-
-</div>`
+  const processContent = (content: string) => {
+    if (!content || typeof content !== 'string') {
+      return '<p>내용을 입력해주세요.</p>';
     }
+
+    const processedContent = applyWordReplacements(content);
     
     // 줄바꿈을 기준으로 분할 (연속된 줄바꿈은 문단 구분으로 처리)
     const lines = processedContent.split('\n');
@@ -110,7 +111,7 @@ const BookmarkletGenerator = ({ config }: BookmarkletGeneratorProps) => {
       paragraphs.push(currentParagraph.join('\n'));
     }
 
-    const contentHTML = paragraphs.map(paragraph => {
+    return paragraphs.map(paragraph => {
       // 빈 문단은 줄바꿈으로 처리
       if (paragraph.trim() === '') {
         return '<p>&nbsp;</p>';
@@ -124,13 +125,43 @@ const BookmarkletGenerator = ({ config }: BookmarkletGeneratorProps) => {
       
       return `<p>${paragraphWithBreaks}</p>`;
     }).join('\n\n\t');
+  }
 
-    // 사용자가 요청한 형태의 HTML 구조로 생성
-    return `<div style="max-width: ${config.containerWidth}px; border-radius: ${config.borderRadius}px; margin: 0 auto; padding: ${config.padding}rem; box-shadow: ${config.boxShadow}; background-color: ${config.backgroundColor}; color: ${config.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};">
+  const generateHTML = () => {
+    // chatSections이 있으면 사용, 없으면 기존 content 사용
+    const sections = config.chatSections && config.chatSections.length > 0 
+      ? config.chatSections 
+      : [{ id: 'default', content: config.content }];
+
+    let allHTML = '';
+
+    sections.forEach((section, index) => {
+      if (!section.content.trim()) return;
+
+      const contentHTML = processContent(section.content);
+
+      if (index === 0) {
+        // 첫 번째 섹션: 전체 컨테이너 스타일 적용
+        allHTML += `<div style="max-width: ${config.containerWidth}px; border-radius: ${config.borderRadius}px; margin: 0 auto; padding: ${config.padding}rem; box-shadow: ${config.boxShadow}; background-color: ${config.backgroundColor}; color: ${config.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};">
 
 \t${contentHTML}
 
-</div>`
+</div>`;
+      } else {
+        // 추가 섹션: 간단한 스타일로 추가 (섹션 사이에 여백 추가)
+        allHTML += `<p><br></p><div style="max-width: ${config.containerWidth}px; border-radius: ${config.borderRadius}px; margin: 0 auto; padding: ${config.padding}rem; box-shadow: ${config.boxShadow}; background-color: ${config.backgroundColor}; color: ${config.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};">
+
+\t${contentHTML}
+
+</div>`;
+      }
+    });
+
+    return allHTML || `<div style="max-width: ${config.containerWidth}px; border-radius: ${config.borderRadius}px; margin: 0 auto; padding: ${config.padding}rem; box-shadow: ${config.boxShadow}; background-color: ${config.backgroundColor}; color: ${config.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight};">
+
+\t<p>내용을 입력해주세요.</p>
+
+</div>`;
   }
 
   return {

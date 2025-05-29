@@ -13,6 +13,11 @@ interface WordReplacement {
   to: string
 }
 
+interface ChatSection {
+  id: string
+  content: string
+}
+
 interface BannerConfig {
   // 프로필 설정
   showProfile: boolean
@@ -68,6 +73,7 @@ interface BannerConfig {
   contentTextColor: string
   fontSize: number
   lineHeight: number
+  chatSections?: ChatSection[]
 }
 
 interface BannerGeneratorV2Props {
@@ -417,88 +423,224 @@ const BannerGeneratorV2 = ({ config }: BannerGeneratorV2Props) => {
     `
     
     if (config.showInnerBox) {
-      return `<p><br></p>
-        <div style="${outerBoxStyle}">
+      return `<div style="${outerBoxStyle}">
           ${innerBoxContent}
-        </div>
-        <p><br></p>`
+        </div>`
     } else {
-      return `<p><br></p>
-        ${innerBoxContent}
-        <p><br></p>`
+      return innerBoxContent
     }
   }
 
   const generateHTML = () => {
     try {
-      let content = config.content
-      
-      if (!content.trim()) {
-        return ''
-      }
+      // chatSections이 있으면 사용, 없으면 기존 content 사용
+      const sections = config.chatSections && config.chatSections.length > 0 
+        ? config.chatSections 
+        : [{ id: 'default', content: config.content }];
 
-      // 단어 변경 처리
-      content = applyWordReplacements(content)
+      let allHTML = '<p><br></p>';
 
-      // 에스터리스크 제거
-      if (config.removeAsterisk) {
-        content = content.replace(/\*+/g, '')
-      }
+      sections.forEach((section, index) => {
+        if (!section.content.trim()) return;
 
-      // 문단별 처리
-      const paragraphs: string[] = []
-      const paragraphList = content.split('\n\n')
-      
-      for (const paragraph of paragraphList) {
-        if (paragraph.trim()) {
-          const formattedText = formatConversation(paragraph)
-          paragraphs.push(`<div style="margin-bottom:1.5rem;">${formattedText}</div>`)
+        let content = section.content;
+
+        // 단어 변경 처리
+        content = applyWordReplacements(content)
+
+        // 에스터리스크 제거
+        if (config.removeAsterisk) {
+          content = content.replace(/\*+/g, '')
         }
-      }
-      
-      // 최종 HTML 생성
-      const processedContent = paragraphs.join('\n')
-      return createTemplate(processedContent)
+
+        // 문단별 처리
+        const paragraphs: string[] = []
+        const paragraphList = content.split('\n\n')
+        
+        for (const paragraph of paragraphList) {
+          if (paragraph.trim()) {
+            const formattedText = formatConversation(paragraph)
+            paragraphs.push(`<div style="margin-bottom:1.5rem;">${formattedText}</div>`)
+          }
+        }
+        
+        const processedContent = paragraphs.join('\n')
+
+        if (index === 0) {
+          // 첫 번째 박스: 모든 요소 포함
+          allHTML += createTemplate(processedContent);
+        } else {
+          // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+          allHTML += '<p><br></p>' + createSimpleTemplate(processedContent);
+        }
+      });
+
+      allHTML += '<p><br></p>';
+
+      return allHTML;
     } catch (error) {
       console.error('HTML 생성 중 오류:', error)
       return '<p>HTML 생성 중 오류가 발생했습니다.</p>'
     }
   }
 
+  // 텍스트만 포함하는 단순한 템플릿 (프로필 없음)
+  const createSimpleTemplate = (content: string) => {
+    // 배경 스타일 결정
+    let backgroundStyle = ''
+    if (config.useGradientBackground) {
+      backgroundStyle = `background: linear-gradient(135deg, ${config.gradientStartColor}, ${config.gradientEndColor});`
+    } else {
+      backgroundStyle = `background: ${config.innerBoxColor};`
+    }
+    
+    // 테두리 스타일
+    const borderStyle = config.useBoxBorder 
+      ? `border: ${config.boxBorderThickness}px solid ${config.boxBorderColor};`
+      : ''
+    
+    // 그림자 스타일
+    const shadowStyle = config.shadowIntensity > 0 
+      ? `box-shadow: 0px ${config.shadowIntensity}px ${config.shadowIntensity * 2}px rgba(0,0,0,0.2);`
+      : ''
+    
+    // 외부 박스 스타일 (showInnerBox가 true일 때만 표시)
+    const outerBoxStyle = config.showInnerBox 
+      ? `background: ${config.outerBoxColor}; padding: 16px; border-radius: 20px;`
+      : ''
+    
+    const innerBoxContent = `
+      <div style="font-family:Segoe UI, Roboto, Arial, sans-serif;
+                  color:${config.contentTextColor};
+                  line-height:1.8;
+                  width:100%;
+                  max-width:600px;
+                  margin:1rem auto;
+                  ${backgroundStyle}
+                  border-radius:16px;
+                  ${borderStyle}
+                  ${shadowStyle}">
+        <div style="padding:24px;">
+          <div style="font-size:${config.fontSize}px;padding:0;">
+            ${content}
+          </div>
+        </div>
+      </div>
+    `
+    
+    if (config.showInnerBox) {
+      return `<div style="${outerBoxStyle}">
+          ${innerBoxContent}
+        </div>`
+    } else {
+      return innerBoxContent
+    }
+  }
+
   // 미리보기용 HTML 생성 (프록시 사용)
   const generatePreviewHTML = () => {
     try {
-      let content = config.content
-      
-      if (!content.trim()) {
-        return ''
-      }
+      // chatSections이 있으면 사용, 없으면 기존 content 사용
+      const sections = config.chatSections && config.chatSections.length > 0 
+        ? config.chatSections 
+        : [{ id: 'default', content: config.content }];
 
-      // 단어 변경 처리
-      content = applyWordReplacements(content)
+      let allHTML = '<p><br></p>';
 
-      // 에스터리스크 제거
-      if (config.removeAsterisk) {
-        content = content.replace(/\*+/g, '')
-      }
+      sections.forEach((section, index) => {
+        if (!section.content.trim()) return;
 
-      // 문단별 처리
-      const paragraphs: string[] = []
-      const paragraphList = content.split('\n\n')
-      
-      for (const paragraph of paragraphList) {
-        if (paragraph.trim()) {
-          const formattedText = formatConversation(paragraph)
-          paragraphs.push(`<div style="margin-bottom:1.5rem;">${formattedText}</div>`)
+        let content = section.content;
+
+        // 단어 변경 처리
+        content = applyWordReplacements(content)
+
+        // 에스터리스크 제거
+        if (config.removeAsterisk) {
+          content = content.replace(/\*+/g, '')
         }
-      }
-      
-      // 최종 HTML 생성 (미리보기용)
-      const processedContent = paragraphs.join('\n')
-      return createPreviewTemplate(processedContent)
+
+        // 문단별 처리
+        const paragraphs: string[] = []
+        const paragraphList = content.split('\n\n')
+        
+        for (const paragraph of paragraphList) {
+          if (paragraph.trim()) {
+            const formattedText = formatConversation(paragraph)
+            paragraphs.push(`<div style="margin-bottom:1.5rem;">${formattedText}</div>`)
+          }
+        }
+        
+        const processedContent = paragraphs.join('\n')
+
+        if (index === 0) {
+          // 첫 번째 박스: 모든 요소 포함
+          allHTML += createPreviewTemplate(processedContent);
+        } else {
+          // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+          allHTML += '<p><br></p>' + createSimplePreviewTemplate(processedContent);
+        }
+      });
+
+      allHTML += '<p><br></p>';
+
+      return allHTML;
     } catch (error) {
       console.error('미리보기 HTML 생성 중 오류:', error)
       return '<p>미리보기 HTML 생성 중 오류가 발생했습니다.</p>'
+    }
+  }
+
+  // 텍스트만 포함하는 단순한 미리보기 템플릿 (프로필 없음)
+  const createSimplePreviewTemplate = (content: string) => {
+    // 배경 스타일 결정
+    let backgroundStyle = ''
+    if (config.useGradientBackground) {
+      backgroundStyle = `background: linear-gradient(135deg, ${config.gradientStartColor}, ${config.gradientEndColor});`
+    } else {
+      backgroundStyle = `background: ${config.innerBoxColor};`
+    }
+    
+    // 테두리 스타일
+    const borderStyle = config.useBoxBorder 
+      ? `border: ${config.boxBorderThickness}px solid ${config.boxBorderColor};`
+      : ''
+    
+    // 그림자 스타일
+    const shadowStyle = config.shadowIntensity > 0 
+      ? `box-shadow: 0px ${config.shadowIntensity}px ${config.shadowIntensity * 2}px rgba(0,0,0,0.2);`
+      : ''
+    
+    // 외부 박스 스타일 (showInnerBox가 true일 때만 표시)
+    const outerBoxStyle = config.showInnerBox 
+      ? `background: ${config.outerBoxColor}; padding: 16px; border-radius: 20px;`
+      : ''
+    
+    const innerBoxContent = `
+      <div style="font-family:Segoe UI, Roboto, Arial, sans-serif;
+                  color:${config.contentTextColor};
+                  line-height:1.8;
+                  width:100%;
+                  max-width:600px;
+                  margin:1rem auto;
+                  ${backgroundStyle}
+                  border-radius:16px;
+                  ${borderStyle}
+                  ${shadowStyle}">
+        <div style="padding:24px;">
+          <div style="font-size:${config.fontSize}px;padding:0;">
+            ${content}
+          </div>
+        </div>
+      </div>
+    `
+    
+    if (config.showInnerBox) {
+      return `<div style="${outerBoxStyle}">
+          ${innerBoxContent}
+        </div>`
+    } else {
+      return innerBoxContent
     }
   }
 
@@ -550,15 +692,11 @@ const BannerGeneratorV2 = ({ config }: BannerGeneratorV2Props) => {
     `
     
     if (config.showInnerBox) {
-      return `<p><br></p>
-        <div style="${outerBoxStyle}">
+      return `<div style="${outerBoxStyle}">
           ${innerBoxContent}
-        </div>
-        <p><br></p>`
+        </div>`
     } else {
-      return `<p><br></p>
-        ${innerBoxContent}
-        <p><br></p>`
+      return innerBoxContent
     }
   }
 

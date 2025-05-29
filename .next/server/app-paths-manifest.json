@@ -1,5 +1,7 @@
 {
   "/page": "app/page.js",
-  "/jelly/page": "app/jelly/page.js",
-  "/chatchan/page": "app/chatchan/page.js"
+  "/card/page": "app/card/page.js",
+  "/chatchan/page": "app/chatchan/page.js",
+  "/viewext/page": "app/viewext/page.js",
+  "/bookmarklet/page": "app/bookmarklet/page.js"
 }

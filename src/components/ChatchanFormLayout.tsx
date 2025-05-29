@@ -221,8 +221,9 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     // 자동 저장
     setupAutoSave(sectionId, content);
     
-    // 전체 내용을 하나로 합쳐서 config 업데이트
-    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    // 전체 내용을 특별한 구분자로 합쳐서 config 업데이트
+    // 일반 줄바꿈과 구별하기 위해 특별한 마커 사용
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n==CHAT_SECTION_SEPARATOR==\n\n');
     onConfigChange({ content: combinedContent });
   };
 
@@ -255,7 +256,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     setChatSections(newSections);
     
     // 전체 내용 업데이트
-    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n==CHAT_SECTION_SEPARATOR==\n\n');
     onConfigChange({ content: combinedContent });
   };
 
@@ -272,7 +273,7 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     setChatSections(newSections);
     
     // 전체 내용 업데이트
-    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n==CHAT_SECTION_SEPARATOR==\n\n');
     onConfigChange({ content: combinedContent });
   };
 
@@ -562,6 +563,11 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     }
   };
 
+  // 이미지 삭제 함수 추가
+  const handleImageDelete = () => {
+    onConfigChange({ characterImageUrl: '' });
+  };
+
   // 단어 변환 기능 (제리형에서 이식)
   const handleWordReplacementChange = (index: number, field: string, value: string) => {
     const newReplacements = [...config.wordReplacements];
@@ -578,8 +584,6 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     const newReplacements = config.wordReplacements.filter((_, i) => i !== index);
     onConfigChange({ wordReplacements: newReplacements });
   };
-
-
 
   return (
     <div className="container">
@@ -751,6 +755,54 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                     <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
                   </ModernHint>
                 </ModernFormGroup>
+
+                {/* 현재 이미지 표시 및 삭제 기능 */}
+                {config.characterImageUrl && (
+                  <ModernFormGroup label="🖼️ 현재 캐릭터 이미지">
+                    <div style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      padding: '10px',
+                      backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <img 
+                          src={config.characterImageUrl} 
+                          alt="캐릭터 이미지 미리보기"
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            objectFit: 'cover',
+                            borderRadius: '4px',
+                            border: '1px solid #cbd5e0'
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                        <span style={{
+                          flex: 1,
+                          fontSize: '14px',
+                          color: isDarkMode ? '#a0aec0' : '#718096',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {config.characterImageUrl.length > 50 
+                            ? config.characterImageUrl.substring(0, 50) + '...' 
+                            : config.characterImageUrl}
+                        </span>
+                      </div>
+                      <ModernButton 
+                        danger 
+                        onClick={handleImageDelete}
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                      >
+                        🗑️ 삭제
+                      </ModernButton>
+                    </div>
+                  </ModernFormGroup>
+                )}
               </>
             )}
           </ModernSection>
@@ -1000,56 +1052,6 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
                    onChange={(value) => handleWordReplacementChange(index, 'to', value)}
                    placeholder="대체할 단어"
                  />
-                <ModernButton
-                  danger
-                  onClick={() => removeWordReplacement(index)}
-                  style={{ padding: '8px 12px', fontSize: '12px' }}
-                >
-                  삭제
-                </ModernButton>
-              </div>
-            ))}
-            <ModernFormGroup>
-              <ModernButton onClick={addWordReplacement}>
-                + 단어 변환 추가
-              </ModernButton>
-            </ModernFormGroup>
-          </ModernSection>
-
-          {/* 단어 변환 기능 (제리형에서 이식) */}
-          <ModernSection title="🔄 단어 변환">
-            <ModernHint>
-              <p><strong>💡 사용법:</strong></p>
-              <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
-              <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
-              <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
-            </ModernHint>
-            {config.wordReplacements.map((replacement, index) => (
-              <div key={index} style={{ 
-                display: 'flex', 
-                gap: '12px', 
-                alignItems: 'center', 
-                marginBottom: '12px',
-                padding: '12px',
-                backgroundColor: 'var(--surface)',
-                borderRadius: '8px',
-                border: '1px solid var(--border)'
-              }}>
-                <ModernInput
-                  value={replacement.from}
-                  onChange={(value) => handleWordReplacementChange(index, 'from', value)}
-                  placeholder="변경할 단어"
-                />
-                <span style={{ 
-                  fontSize: '18px', 
-                  color: 'var(--text-secondary)',
-                  fontWeight: 'bold'
-                }}>→</span>
-                <ModernInput
-                  value={replacement.to}
-                  onChange={(value) => handleWordReplacementChange(index, 'to', value)}
-                  placeholder="대체할 단어"
-                />
                 <ModernButton
                   danger
                   onClick={() => removeWordReplacement(index)}

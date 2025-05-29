@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ModernButton,
   ModernInput,
@@ -16,6 +16,11 @@ import JellyGenerator from '@/generators/JellyGenerator'
 interface WordReplacement {
   from: string;
   to: string;
+}
+
+interface ChatSection {
+  id: string;
+  content: string;
 }
 
 interface JellyConfig {
@@ -39,6 +44,7 @@ interface JellyConfig {
   content: string;
   wordReplacements: WordReplacement[];
   selectedTheme: string;
+  chatSections: ChatSection[];
 }
 
 interface JellyFormLayoutProps {
@@ -59,6 +65,17 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
   onReset
 }) => {
   const [extractedFromHtml, setExtractedFromHtml] = useState(false);
+  
+  // 채팅 섹션 상태 추가
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
+  
+  // 텍스트에어리어 참조 추가
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+  
+  // 자동 저장 키 상수 추가
+  const AUTOSAVE_PREFIX = 'autoSavedJelly_v1_';
 
   // 기본 이미지 옵션
   const defaultImages = [
@@ -242,6 +259,105 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
     setExtractedFromHtml(false);
   };
 
+  // 이미지 삭제 함수 추가
+  const handleImageDelete = () => {
+    handleInputChange('backgroundImage', '');
+    setExtractedFromHtml(false);
+  };
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 채팅 섹션 업데이트
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
+    setChatSections(newSections);
+    
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `jelly_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 내용 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 내용 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
   // 미리보기용 HTML 생성
   const generatePreviewHTML = () => {
     const generator = JellyGenerator({ config });
@@ -260,260 +376,374 @@ const JellyFormLayout: React.FC<JellyFormLayoutProps> = ({
 
           {/* 본문 내용을 최상단으로 이동 */}
           <ModernSection title="📄 본문 내용">
-          <ModernFormGroup>
-            <ModernTextarea
-              value={config.content}
-              onChange={(value) => handleInputChange('content', value)}
-              placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
-              rows={12}
-            />
-          </ModernFormGroup>
-          
-          {/* 액션 버튼도 함께 최상단에 배치 */}
-          <div className="button-group">
-            <ModernButton onClick={onCopyHTML}>
-              ✨ 스타일 복사 (고급)
-            </ModernButton>
-            <ModernButton danger onClick={onReset}>
-              🔄 초기화
-            </ModernButton>
-          </div>
-          <ModernHint>
-            💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
-          </ModernHint>
-        </ModernSection>
-
-        {/* 이미지 설정 */}
-        <ModernSection title="🖼️ 이미지 설정">
-          {/* 로컬 이미지 업로드 */}
-          <ModernFormGroup label="📁 로컬 이미지 업로드">
-            <input
-              className="form-input"
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              style={{
-                padding: '12px',
-                border: '2px dashed var(--border-color)',
-                borderRadius: '8px',
-                backgroundColor: 'var(--bg-tertiary)',
-                cursor: 'pointer'
-              }}
-            />
             <ModernHint>
-              💡 <strong>간편한 업로드:</strong> 이미지를 선택하면 base64로 변환되어 복사 기능에서도 정상 작동합니다!
+              <strong>본문 작성 안내</strong>
+              <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                - 대화 부분은 큰따옴표 "텍스트" 또는 둥근따옴표 "텍스트"로 감싸주세요<br />
+                - 속마음 부분은 작은따옴표 '텍스트'로 감싸주세요<br />
+                - 여러 개의 본문 섹션을 추가해서 구분하여 작성할 수 있습니다
+              </div>
             </ModernHint>
-            <ModernHint>
-              📋 지원 형식: JPG, PNG, GIF, WebP (최대 5MB)
-            </ModernHint>
-          </ModernFormGroup>
 
-          <ModernFormGroup>
-            <div className="divider-text">또는 외부 URL 사용</div>
-          </ModernFormGroup>
+            {/* 본문 섹션들 */}
+            {chatSections.map((section, index) => (
+              <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                {/* 섹션 헤더 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    본문 내용 {chatSections.length > 1 ? `${index + 1}` : ''}
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'up')}
+                      disabled={index === 0}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▲
+                    </ModernButton>
+                    <ModernButton
+                      onClick={() => moveChatSection(section.id, 'down')}
+                      disabled={index === chatSections.length - 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      ▼
+                    </ModernButton>
+                    <ModernButton
+                      danger
+                      onClick={() => removeChatSection(section.id)}
+                      disabled={chatSections.length <= 1}
+                      style={{ padding: '4px 8px', fontSize: '12px' }}
+                    >
+                      X
+                    </ModernButton>
+                  </div>
+                </div>
 
-          <ModernFormGroup label="🔗 외부 이미지 URL">
-            <ModernInput
-              value={config.backgroundImage.startsWith('/uploads/') ? '' : config.backgroundImage}
-              onChange={(value) => handleInputChange('backgroundImage', value)}
-              onPaste={handlePaste}
-              placeholder="외부 이미지 URL을 입력하세요"
-            />
+                {/* 텍스트에어리어 */}
+                <textarea
+                  ref={(el) => {
+                    if (el) {
+                      textareaRefs.current[section.id] = el;
+                    }
+                  }}
+                  value={section.content}
+                  onChange={(e) => updateChatSection(section.id, e.target.value)}
+                  placeholder="본문 내용을 입력하세요. 대화 부분은 따옴표로 감싸주세요."
+                  rows={12}
+                  className="form-input form-textarea"
+                  style={{ width: '100%', minHeight: '200px' }}
+                />
+              </div>
+            ))}
+
+            {/* 본문 섹션 추가 버튼 */}
+            <ModernFormGroup>
+              <ModernButton onClick={addChatSection}>
+                본문 섹션 추가
+              </ModernButton>
+            </ModernFormGroup>
+            
+            {/* 액션 버튼도 함께 최상단에 배치 */}
+            <div className="button-group">
+              <ModernButton onClick={onCopyHTML}>
+                ✨ 스타일 복사 (고급)
+              </ModernButton>
+              <ModernButton danger onClick={onReset}>
+                🔄 초기화
+              </ModernButton>
+            </div>
             <ModernHint>
-              💡 아카라이브, 이미지 호스팅 사이트 등의 이미지 URL을 사용할 수 있습니다.
+              💡 <strong>스타일 복사 (고급)</strong>: 디자인과 이미지가 함께 클립보드에 복사됩니다. 글쓰기 에디터에 붙여넣기하면 HTML 에디터를 열지 않고도 자동으로 스타일이 적용됩니다!
             </ModernHint>
-            {extractedFromHtml && (
-              <ModernHint type="success">
-                ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
+          </ModernSection>
+
+          {/* 이미지 설정 */}
+          <ModernSection title="🖼️ 이미지 설정">
+            {/* 로컬 이미지 업로드 */}
+            <ModernFormGroup label="📁 로컬 이미지 업로드">
+              <input
+                className="form-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                style={{
+                  padding: '12px',
+                  border: '2px dashed var(--border-color)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  cursor: 'pointer'
+                }}
+              />
+              <ModernHint>
+                💡 <strong>간편한 업로드:</strong> 이미지를 선택하면 base64로 변환되어 복사 기능에서도 정상 작동합니다!
               </ModernHint>
-            )}
-          </ModernFormGroup>
-          
-          {/* 기본 이미지 선택 */}
-          <ModernFormGroup label="🖼️ 기본 이미지">
-            <div className="default-images-grid">
-              {defaultImages.map((image) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  className={`default-image-button ${config.backgroundImage === image.url ? 'active' : ''}`}
-                  onClick={() => handleDefaultImageSelect(image.url)}
-                  title={`${image.name} 배경 이미지 적용`}
-                >
-                  <img 
-                    src={getPreviewImageUrl(image.url)} 
-                    alt={image.name}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none'
+              <ModernHint>
+                📋 지원 형식: JPG, PNG, GIF, WebP (최대 5MB)
+              </ModernHint>
+            </ModernFormGroup>
+
+            <ModernFormGroup>
+              <div className="divider-text">또는 외부 URL 사용</div>
+            </ModernFormGroup>
+
+            <ModernFormGroup label="🔗 외부 이미지 URL">
+              <ModernInput
+                value={config.backgroundImage.startsWith('/uploads/') ? '' : config.backgroundImage}
+                onChange={(value) => handleInputChange('backgroundImage', value)}
+                onPaste={handlePaste}
+                placeholder="외부 이미지 URL을 입력하세요"
+              />
+              <ModernHint>
+                💡 아카라이브, 이미지 호스팅 사이트 등의 이미지 URL을 사용할 수 있습니다.
+              </ModernHint>
+              {extractedFromHtml && (
+                <ModernHint type="success">
+                  ✅ 이미지 HTML에서 URL을 자동으로 추출했습니다!
+                </ModernHint>
+              )}
+            </ModernFormGroup>
+            
+            {/* 현재 이미지 표시 및 삭제 기능 */}
+            {config.backgroundImage && (
+              <ModernFormGroup label="🖼️ 현재 배경 이미지">
+                <div style={{
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  padding: '10px',
+                  backgroundColor: 'var(--bg-tertiary)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                    <img 
+                      src={getPreviewImageUrl(config.backgroundImage)} 
+                      alt="배경 이미지 미리보기"
+                      style={{
+                        width: '60px',
+                        height: '30px',
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border-color)'
+                      }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span style={{
+                      flex: 1,
+                      fontSize: '14px',
+                      color: 'var(--text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {config.backgroundImage.length > 50 
+                        ? config.backgroundImage.substring(0, 50) + '...' 
+                        : config.backgroundImage}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleImageDelete}
+                    style={{
+                      fontSize: '12px',
+                      padding: '4px 8px',
+                      backgroundColor: '#e53e3e',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
                     }}
-                  />
-                  <span className="image-name">{image.name}</span>
-                </button>
-              ))}
-            </div>
-            <ModernHint>
-              💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
-            </ModernHint>
-          </ModernFormGroup>
-        </ModernSection>
+                  >
+                    🗑️ 삭제
+                  </button>
+                </div>
+              </ModernFormGroup>
+            )}
 
-        {/* 텍스트 설정 */}
-        <ModernSection title="📝 텍스트 설정">
-          <ModernFormRow>
-            <ModernFormGroup label="왼쪽 텍스트">
-              <ModernInput
-                value={config.leftText}
-                onChange={(value) => handleInputChange('leftText', value)}
-                placeholder="왼쪽 텍스트"
-              />
+            {/* 기본 이미지 선택 */}
+            <ModernFormGroup label="🖼️ 기본 이미지">
+              <div className="default-images-grid">
+                {defaultImages.map((image) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    className={`default-image-button ${config.backgroundImage === image.url ? 'active' : ''}`}
+                    onClick={() => handleDefaultImageSelect(image.url)}
+                    title={`${image.name} 배경 이미지 적용`}
+                  >
+                    <img 
+                      src={getPreviewImageUrl(image.url)} 
+                      alt={image.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none'
+                      }}
+                    />
+                    <span className="image-name">{image.name}</span>
+                  </button>
+                ))}
+              </div>
+              <ModernHint>
+                💡 클릭하여 미리 준비된 배경 이미지를 선택하세요
+              </ModernHint>
             </ModernFormGroup>
-            <ModernFormGroup label="오른쪽 텍스트">
-              <ModernInput
-                value={config.rightText}
-                onChange={(value) => handleInputChange('rightText', value)}
-                placeholder="오른쪽 텍스트"
-              />
-            </ModernFormGroup>
-          </ModernFormRow>
-        </ModernSection>
+          </ModernSection>
 
-        {/* 본문 색상 설정 추가 */}
-        <ModernSection title="🎨 본문 색상 설정">
-          <ModernFormRow>
-            <ModernFormGroup label="본문 배경색">
-              <ModernColorPicker
-                value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
-                onChange={(value) => handleInputChange('contentBackgroundColor', value)}
-              />
-            </ModernFormGroup>
-            <ModernFormGroup label="본문 글자색">
-              <ModernColorPicker
-                value={config.contentTextColor}
-                onChange={(value) => handleInputChange('contentTextColor', value)}
-              />
-            </ModernFormGroup>
-          </ModernFormRow>
-        </ModernSection>
+          {/* 텍스트 설정 */}
+          <ModernSection title="📝 텍스트 설정">
+            <ModernFormRow>
+              <ModernFormGroup label="왼쪽 텍스트">
+                <ModernInput
+                  value={config.leftText}
+                  onChange={(value) => handleInputChange('leftText', value)}
+                  placeholder="왼쪽 텍스트"
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="오른쪽 텍스트">
+                <ModernInput
+                  value={config.rightText}
+                  onChange={(value) => handleInputChange('rightText', value)}
+                  placeholder="오른쪽 텍스트"
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
 
-        {/* 색상 설정 */}
-        <ModernSection title="🎨 색상 설정">
-          <ModernFormRow>
-            <ModernFormGroup label="왼쪽 박스 색상 1">
-              <ModernColorPicker
-                value={config.leftTextColor1}
-                onChange={(value) => handleInputChange('leftTextColor1', value)}
-              />
-            </ModernFormGroup>
-            <ModernFormGroup label="왼쪽 박스 색상 2">
-              <ModernColorPicker
-                value={config.leftTextColor2}
-                onChange={(value) => handleInputChange('leftTextColor2', value)}
-              />
-            </ModernFormGroup>
-          </ModernFormRow>
-          <ModernFormRow>
-            <ModernFormGroup label="큰따옴표 색상 1">
-              <ModernColorPicker
-                value={config.quoteColor1}
-                onChange={(value) => handleInputChange('quoteColor1', value)}
-              />
-            </ModernFormGroup>
-            <ModernFormGroup label="큰따옴표 색상 2">
-              <ModernColorPicker
-                value={config.quoteColor2}
-                onChange={(value) => handleInputChange('quoteColor2', value)}
-              />
-            </ModernFormGroup>
-          </ModernFormRow>
-          <ModernFormRow>
-            <ModernFormGroup label="작은따옴표 색상">
-              <ModernColorPicker
-                value={config.singleQuoteColor}
-                onChange={(value) => handleInputChange('singleQuoteColor', value)}
-              />
-            </ModernFormGroup>
-          </ModernFormRow>
-        </ModernSection>
+          {/* 본문 색상 설정 추가 */}
+          <ModernSection title="🎨 본문 색상 설정">
+            <ModernFormRow>
+              <ModernFormGroup label="본문 배경색">
+                <ModernColorPicker
+                  value={config.contentBackgroundColor && config.contentBackgroundColor.includes('rgba') ? '#fafafa' : config.contentBackgroundColor || '#fafafa'}
+                  onChange={(value) => handleInputChange('contentBackgroundColor', value)}
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="본문 글자색">
+                <ModernColorPicker
+                  value={config.contentTextColor}
+                  onChange={(value) => handleInputChange('contentTextColor', value)}
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
 
-        {/* 스타일 옵션 */}
-        <ModernSection title="✨ 스타일 옵션">
-          <ModernCheckbox
-            checked={config.quoteColorEnabled}
-            onChange={(checked) => handleInputChange('quoteColorEnabled', checked)}
-            label="큰따옴표 색상 활성화"
-          />
-          <ModernCheckbox
-            checked={config.quoteGradientEnabled}
-            onChange={(checked) => handleInputChange('quoteGradientEnabled', checked)}
-            label="큰따옴표 그라데이션 효과"
-          />
-          <ModernCheckbox
-            checked={config.boldEnabled}
-            onChange={(checked) => handleInputChange('boldEnabled', checked)}
-            label="큰따옴표 볼드체"
-          />
-          <ModernCheckbox
-            checked={config.singleQuoteItalic}
-            onChange={(checked) => handleInputChange('singleQuoteItalic', checked)}
-            label="작은따옴표 기울기"
-          />
-          <ModernCheckbox
-            checked={config.paragraphIndent}
-            onChange={(checked) => handleInputChange('paragraphIndent', checked)}
-            label="문단 들여쓰기"
-          />
-        </ModernSection>
+          {/* 색상 설정 */}
+          <ModernSection title="🎨 색상 설정">
+            <ModernFormRow>
+              <ModernFormGroup label="왼쪽 박스 색상 1">
+                <ModernColorPicker
+                  value={config.leftTextColor1}
+                  onChange={(value) => handleInputChange('leftTextColor1', value)}
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="왼쪽 박스 색상 2">
+                <ModernColorPicker
+                  value={config.leftTextColor2}
+                  onChange={(value) => handleInputChange('leftTextColor2', value)}
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="큰따옴표 색상 1">
+                <ModernColorPicker
+                  value={config.quoteColor1}
+                  onChange={(value) => handleInputChange('quoteColor1', value)}
+                />
+              </ModernFormGroup>
+              <ModernFormGroup label="큰따옴표 색상 2">
+                <ModernColorPicker
+                  value={config.quoteColor2}
+                  onChange={(value) => handleInputChange('quoteColor2', value)}
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+            <ModernFormRow>
+              <ModernFormGroup label="작은따옴표 색상">
+                <ModernColorPicker
+                  value={config.singleQuoteColor}
+                  onChange={(value) => handleInputChange('singleQuoteColor', value)}
+                />
+              </ModernFormGroup>
+            </ModernFormRow>
+          </ModernSection>
 
-        {/* 본문 텍스트 조절 */}
-        <ModernSection title="📏 본문 텍스트 조절">
-          <ModernSlider
-            value={config.fontSize}
-            onChange={(value) => handleInputChange('fontSize', value)}
-            min={10}
-            max={24}
-            step={1}
-            label="폰트 크기"
-          />
-          <ModernSlider
-            value={config.lineHeight}
-            onChange={(value) => handleInputChange('lineHeight', value)}
-            min={1.2}
-            max={2.5}
-            step={0.1}
-            label="줄 간격"
-          />
-        </ModernSection>
+          {/* 스타일 옵션 */}
+          <ModernSection title="✨ 스타일 옵션">
+            <ModernCheckbox
+              checked={config.quoteColorEnabled}
+              onChange={(checked) => handleInputChange('quoteColorEnabled', checked)}
+              label="큰따옴표 색상 활성화"
+            />
+            <ModernCheckbox
+              checked={config.quoteGradientEnabled}
+              onChange={(checked) => handleInputChange('quoteGradientEnabled', checked)}
+              label="큰따옴표 그라데이션 효과"
+            />
+            <ModernCheckbox
+              checked={config.boldEnabled}
+              onChange={(checked) => handleInputChange('boldEnabled', checked)}
+              label="큰따옴표 볼드체"
+            />
+            <ModernCheckbox
+              checked={config.singleQuoteItalic}
+              onChange={(checked) => handleInputChange('singleQuoteItalic', checked)}
+              label="작은따옴표 기울기"
+            />
+            <ModernCheckbox
+              checked={config.paragraphIndent}
+              onChange={(checked) => handleInputChange('paragraphIndent', checked)}
+              label="문단 들여쓰기"
+            />
+          </ModernSection>
 
-        {/* 단어 교환 - 3줄로 확장 */}
-        <ModernSection title="🔄 단어 교환">
-          {config.wordReplacements.map((replacement, index) => (
-            <div key={index} className="word-replacement">
-              <ModernInput
-                value={replacement.from}
-                onChange={(value) => handleWordReplacementChange(index, 'from', value)}
-                placeholder="변경할 단어"
-              />
-              <span className="arrow">→</span>
-              <ModernInput
-                value={replacement.to}
-                onChange={(value) => handleWordReplacementChange(index, 'to', value)}
-                placeholder="대체할 단어"
-              />
-            </div>
-          ))}
-        </ModernSection>
-      </div>
+          {/* 본문 텍스트 조절 */}
+          <ModernSection title="📏 본문 텍스트 조절">
+            <ModernSlider
+              value={config.fontSize}
+              onChange={(value) => handleInputChange('fontSize', value)}
+              min={10}
+              max={24}
+              step={1}
+              label="폰트 크기"
+            />
+            <ModernSlider
+              value={config.lineHeight}
+              onChange={(value) => handleInputChange('lineHeight', value)}
+              min={1.2}
+              max={2.5}
+              step={0.1}
+              label="줄 간격"
+            />
+          </ModernSection>
 
-      <div className="preview-panel">
-        <div className="preview-header">
-          <h3 className="preview-title">👀 미리보기</h3>
+          {/* 단어 교환 - 3줄로 확장 */}
+          <ModernSection title="🔄 단어 교환">
+            {config.wordReplacements.map((replacement, index) => (
+              <div key={index} className="word-replacement">
+                <ModernInput
+                  value={replacement.from}
+                  onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                  placeholder="변경할 단어"
+                />
+                <span className="arrow">→</span>
+                <ModernInput
+                  value={replacement.to}
+                  onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                  placeholder="대체할 단어"
+                />
+              </div>
+            ))}
+          </ModernSection>
         </div>
-        
-        <div className="preview-container">
-          <div dangerouslySetInnerHTML={{ __html: generatePreviewHTML() }} />
+
+        <div className="preview-panel">
+          <div className="preview-header">
+            <h3 className="preview-title">👀 미리보기</h3>
+          </div>
+          
+          <div className="preview-container">
+            <div dangerouslySetInnerHTML={{ __html: generatePreviewHTML() }} />
+          </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

@@ -42,90 +42,132 @@ async function convertImageToDataUrl(imageUrl: string): Promise<string> {
 
     console.log(`🖼️ 이미지 변환 시작: ${imageUrl} -> ${fetchUrl}`);
 
-    // 이미지를 fetch로 가져오기 (CORS 우회 처리)
+    // 이미지를 다양한 방법으로 시도
     let response;
+    let dataUrl;
+    
+    // 방법 1: 직접 fetch 시도
     try {
       response = await fetch(fetchUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        dataUrl = await blobToDataUrl(blob);
+        console.log(`✅ 직접 fetch 성공: ${dataUrl.length} 문자 길이`);
+        return dataUrl;
       }
     } catch (fetchError) {
-      // CORS 오류가 발생한 경우 프록시를 통해 재시도
-      console.warn(`직접 fetch 실패, 프록시 사용: ${fetchError}`);
-      
-      // 로컬 이미지가 아닌 경우에만 프록시 사용
-      if (!fetchUrl.includes('/uploads/') && !fetchUrl.includes('localhost')) {
-        const proxyUrl = `https://images.weserv.nl/?url=${encodeURIComponent(fetchUrl)}`;
-        console.log(`🔄 프록시 URL 사용: ${proxyUrl}`);
-        
+      console.warn(`직접 fetch 실패: ${fetchError}`);
+    }
+    
+    // 방법 2: 이미지 엘리먼트를 사용한 canvas 변환 (CORS 무시)
+    try {
+      dataUrl = await imageToDataUrlViaCanvas(fetchUrl);
+      if (dataUrl && dataUrl !== fetchUrl) {
+        console.log(`✅ Canvas 변환 성공: ${dataUrl.length} 문자 길이`);
+        return dataUrl;
+      }
+    } catch (canvasError) {
+      console.warn(`Canvas 변환 실패: ${canvasError}`);
+    }
+    
+    // 방법 3: 여러 프록시 서비스 시도
+    const proxyServices = [
+      `https://cors-anywhere.herokuapp.com/${fetchUrl}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(fetchUrl)}`,
+      `https://thingproxy.freeboard.io/fetch/${fetchUrl}`
+    ];
+    
+    for (const proxyUrl of proxyServices) {
+      try {
+        console.log(`🔄 프록시 시도: ${proxyUrl}`);
         response = await fetch(proxyUrl);
-        if (!response.ok) {
-          throw new Error(`Proxy fetch failed: ${response.status} ${response.statusText}`);
+        if (response.ok) {
+          const blob = await response.blob();
+          dataUrl = await blobToDataUrl(blob);
+          console.log(`✅ 프록시 성공: ${dataUrl.length} 문자 길이`);
+          return dataUrl;
         }
-      } else {
-        throw fetchError; // 로컬 이미지는 프록시 사용하지 않고 오류 전파
+      } catch (proxyError) {
+        console.warn(`프록시 실패 ${proxyUrl}: ${proxyError}`);
       }
     }
-
-    const blob = await response.blob();
-    console.log(`📦 이미지 blob 크기: ${blob.size} bytes, 타입: ${blob.type}`);
     
-    // RisuAI 방식: Canvas를 사용해서 이미지를 base64로 변환
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          if (!ctx) {
-            reject(new Error('Canvas context not available'));
-            return;
-          }
-
-          // 원본 크기 유지하되, 너무 큰 이미지는 리사이즈
-          let { width, height } = img;
-          const maxSize = 2000; // 최대 크기 제한
-          
-          if (width > maxSize || height > maxSize) {
-            const aspectRatio = width / height;
-            if (width > height) {
-              width = maxSize;
-              height = Math.round(width / aspectRatio);
-            } else {
-              height = maxSize;
-              width = Math.round(height * aspectRatio);
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          
-          // 이미지를 캔버스에 그리기
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // JPEG로 변환 (압축률 0.9로 고품질 유지)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-          console.log(`✅ 이미지 변환 완료: ${dataUrl.length} 문자 길이`);
-          resolve(dataUrl);
-        };
-        img.onerror = (error) => {
-          console.error('이미지 로드 실패:', error);
-          reject(new Error('Failed to load image'));
-        };
-        img.src = reader.result as string;
-      };
-      reader.onerror = (error) => {
-        console.error('FileReader 오류:', error);
-        reject(new Error('Failed to read blob'));
-      };
-      reader.readAsDataURL(blob);
-    });
+    // 모든 방법이 실패하면 원본 URL 반환
+    console.log(`⚠️ 모든 변환 방법 실패, 원본 URL 반환: ${imageUrl}`);
+    return imageUrl;
+    
   } catch (error) {
     console.error(`❌ 이미지 변환 실패 ${imageUrl}:`, error);
     return imageUrl; // 실패하면 원본 URL 반환
   }
+}
+
+/**
+ * Blob을 데이터 URL로 변환
+ */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * 이미지 엘리먼트와 Canvas를 사용하여 데이터 URL로 변환 (CORS 무시)
+ */
+async function imageToDataUrlViaCanvas(imageUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // CORS 설정
+    
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+
+        // 원본 크기 유지하되, 너무 큰 이미지는 리사이즈
+        let { width, height } = img;
+        const maxSize = 2000; // 최대 크기 제한
+        
+        if (width > maxSize || height > maxSize) {
+          const aspectRatio = width / height;
+          if (width > height) {
+            width = maxSize;
+            height = Math.round(width / aspectRatio);
+          } else {
+            height = maxSize;
+            width = Math.round(height * aspectRatio);
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 이미지를 캔버스에 그리기
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // JPEG로 변환 (압축률 0.9로 고품질 유지)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        resolve(dataUrl);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = () => {
+      reject(new Error('이미지 로드 실패'));
+    };
+    
+    // 이미지 로드 시작
+    img.src = imageUrl;
+  });
 }
 
 /**

@@ -40,13 +40,21 @@ interface Config {
   tagBorderColor: string;
   tagStyle: 'filled' | 'outline';
   hideProfileSection: boolean;
+  hideBackgroundImage: boolean;
+  hideProfileImage: boolean;
+  chatSections?: ChatSection[];
 }
 
-interface BingdunGeneratorProps {
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
+interface CardGeneratorProps {
   config: Config;
 }
 
-const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
+const CardGenerator = ({ config }: CardGeneratorProps) => {
   const hexToRgb = (hex: string): string => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result 
@@ -83,7 +91,7 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
     return url;
   };
 
-  // 미리보기용 이미지 URL 생성 (프록시를 통해 CORS 우회)
+  // 미리보기용 이미지 URL 생성 (CORS 우회)
   const getPreviewImageUrl = (url: string): string => {
     const normalizedUrl = normalizeImageUrl(url);
     
@@ -97,15 +105,9 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
       return normalizedUrl;
     }
     
-    // 아카라이브 이미지인 경우 프록시를 통해 로드
-    if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
-      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
-      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
-      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
-    }
-    
-    // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
-    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+    // 미리보기에서는 원본 URL 사용 (CORS 오류 무시)
+    // img 태그에서 crossorigin 없이 로드하면 CORS 오류가 콘솔에만 표시되고 이미지는 정상 표시됨
+    return normalizedUrl;
   };
 
   const applyWordReplacements = (text: string): string => {
@@ -119,9 +121,11 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
   };
 
   const generateHTML = (): string => {
-    const processedContent = applyWordReplacements(config.content);
-    const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
-    
+    // chatSections이 있으면 사용, 없으면 기존 content 사용
+    const sections = config.chatSections && config.chatSections.length > 0 
+      ? config.chatSections 
+      : [{ id: 'default', content: config.content }];
+
     // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
     const finalImageUrl = normalizeImageUrl(config.backgroundImage);
     const profileImageUrl = normalizeImageUrl(config.profileImage);
@@ -168,7 +172,7 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         themeStyles = {
           cardBackground: '#ffffff',
           cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
-          profileBorder: '#ffffff',
+          profileBorder: '#000000',
           textColor: '#333333',
           nameColor: '#000000',
           tagTextColor: config.tagStyle === 'outline' ? '#000000' : config.tagTextColor,
@@ -178,39 +182,45 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         break;
     }
 
-    const contentHTML = paragraphs.map(paragraph => {
-      const trimmedParagraph = paragraph.trim();
+    // 텍스트 처리 함수
+    const processTextContent = (content: string) => {
+      const processedContent = applyWordReplacements(content);
+      const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
       
-      let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
-      if (config.paragraphIndent) {
-        paragraphStyle += ' text-indent: 1.5em;';
-      }
-      
-      // 대화 부분 스타일링
-      if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        const beforeQuote = trimmedParagraph.split('"')[0];
-        const quote = trimmedParagraph.split('"')[1];
-        const afterQuote = trimmedParagraph.split('"')[2] || '';
+      return paragraphs.map(paragraph => {
+        const trimmedParagraph = paragraph.trim();
         
-        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          "${quote}"
-        </div>
-        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
-      } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        const beforeQuote = trimmedParagraph.split("'")[0];
-        const quote = trimmedParagraph.split("'")[1];
-        const afterQuote = trimmedParagraph.split("'")[2] || '';
+        let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
+        if (config.paragraphIndent) {
+          paragraphStyle += ' text-indent: 1.5em;';
+        }
         
-        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-          '${quote}'
-        </div>
-        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
-      } else {
-        return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
-      }
-    }).join('');
+        // 대화 부분 스타일링
+        if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
+          const beforeQuote = trimmedParagraph.split('"')[0];
+          const quote = trimmedParagraph.split('"')[1];
+          const afterQuote = trimmedParagraph.split('"')[2] || '';
+          
+          return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+          <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            "${quote}"
+          </div>
+          ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+        } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
+          const beforeQuote = trimmedParagraph.split("'")[0];
+          const quote = trimmedParagraph.split("'")[1];
+          const afterQuote = trimmedParagraph.split("'")[2] || '';
+          
+          return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+          <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+            '${quote}'
+          </div>
+          ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+        } else {
+          return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
+        }
+      }).join('');
+    };
 
     // 태그 스타일 설정
     const getTagStyle = (tagText: string) => {
@@ -229,15 +239,15 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
       tag.trim() ? `<span style="${getTagStyle(tag)}">${tag}</span>` : ''
     ).filter(Boolean).join('');
 
-    // 프로필 섹션 HTML (조건부 렌더링) - img 태그 사용으로 변경
+    // 프로필 섹션 HTML (조건부 렌더링)
     const profileSectionHTML = config.hideProfileSection ? '' : `
-    <div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
+    ${!config.hideBackgroundImage ? `<div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
         <img style="width:100%;height:100%;object-fit:cover;border-top-left-radius:16px;border-top-right-radius:16px;" src="${finalImageUrl}" class="fr-fic fr-dii">
-    </div>
+    </div>` : ''}
 
-    <div style="margin-top:-48px;text-align:center;position:relative;z-index:2;">
+    ${!config.hideProfileImage ? `<div style="margin-top:${!config.hideBackgroundImage ? '-48px' : '0'};text-align:center;position:relative;z-index:2;">
         <img style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid ${themeStyles.profileBorder};" src="${profileImageUrl}" class="fr-fic fr-dii">
-    </div>
+    </div>` : ''}
 
     <div style="padding:1.5rem;text-align:center;">
         <h2 style="margin-bottom:0.5rem;font-weight:600;">
@@ -251,20 +261,46 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
 
     <hr style="border-color: ${config.designTheme === 'white' ? '#eeeeee' : '#444444'};">`;
 
-    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    // 여러 섹션 처리
+    let allHTML = '<p><br></p>';
+
+    sections.forEach((section, index) => {
+      if (!section.content.trim()) return;
+
+      const contentHTML = processTextContent(section.content);
+
+      if (index === 0) {
+        // 첫 번째 박스: 모든 요소 포함
+        allHTML += `<div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
 
     ${profileSectionHTML}
 
     <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
         ${contentHTML}
     </div>
-</div><p><br></p>`;
+</div>`;
+      } else {
+        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+        allHTML += `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+
+    <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
+        ${contentHTML}
+    </div>
+</div>`;
+      }
+    });
+
+    allHTML += '<p><br></p>';
+
+    return allHTML;
   };
 
   // 미리보기 전용 HTML 생성 (프록시 사용)
   const generatePreviewHTML = (): string => {
-    const processedContent = applyWordReplacements(config.content);
-    const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
+    // chatSections이 있으면 사용, 없으면 기존 content 사용
+    const sections = config.chatSections && config.chatSections.length > 0 
+      ? config.chatSections 
+      : [{ id: 'default', content: config.content }];
     
     // 미리보기용 - 프록시 사용 (CORS 우회)
     const finalImageUrl = getPreviewImageUrl(config.backgroundImage);
@@ -312,7 +348,7 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         themeStyles = {
           cardBackground: '#ffffff',
           cardGradient: 'linear-gradient(to bottom, #ffffff 60%, #fbf9fa)',
-          profileBorder: '#ffffff',
+          profileBorder: '#000000',
           textColor: '#333333',
           nameColor: '#000000',
           tagTextColor: config.tagStyle === 'outline' ? '#000000' : config.tagTextColor,
@@ -322,39 +358,45 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
         break;
     }
 
-    const contentHTML = paragraphs.map(paragraph => {
-      const trimmedParagraph = paragraph.trim();
+    // 텍스트 처리 함수
+    const processTextContent = (content: string) => {
+      const processedContent = applyWordReplacements(content);
+      const paragraphs = processedContent.split('\n\n').filter(p => p.trim());
       
-      let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
-      if (config.paragraphIndent) {
-        paragraphStyle += ' text-indent: 1.5em;';
-      }
-      
-      // 대화 부분 스타일링
-      if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
-        const beforeQuote = trimmedParagraph.split('"')[0];
-        const quote = trimmedParagraph.split('"')[1];
-        const afterQuote = trimmedParagraph.split('"')[2] || '';
+      return paragraphs.map(paragraph => {
+        const trimmedParagraph = paragraph.trim();
         
-        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-          "${quote}"
-        </div>
-        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
-      } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
-        const beforeQuote = trimmedParagraph.split("'")[0];
-        const quote = trimmedParagraph.split("'")[1];
-        const afterQuote = trimmedParagraph.split("'")[2] || '';
+        let paragraphStyle = `color: ${themeStyles.textColor}; font-size: ${config.fontSize}px; line-height: ${config.lineHeight}; margin-bottom: 18px; padding: 8px 0;`;
+        if (config.paragraphIndent) {
+          paragraphStyle += ' text-indent: 1.5em;';
+        }
         
-        return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
-        <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-          '${quote}'
-        </div>
-        ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
-      } else {
-        return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
-      }
-    }).join('');
+        // 대화 부분 스타일링
+        if (trimmedParagraph.includes('"') && trimmedParagraph.includes('"')) {
+          const beforeQuote = trimmedParagraph.split('"')[0];
+          const quote = trimmedParagraph.split('"')[1];
+          const afterQuote = trimmedParagraph.split('"')[2] || '';
+          
+          return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+          <div style="margin: 15px 0; padding: 12px 18px; background: linear-gradient(135deg, ${config.quoteColor1}, ${config.quoteColor2}); color: white; border-radius: 20px; font-weight: ${config.boldEnabled ? 'bold' : '500'}; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            "${quote}"
+          </div>
+          ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+        } else if (trimmedParagraph.includes("'") && trimmedParagraph.includes("'")) {
+          const beforeQuote = trimmedParagraph.split("'")[0];
+          const quote = trimmedParagraph.split("'")[1];
+          const afterQuote = trimmedParagraph.split("'")[2] || '';
+          
+          return `${beforeQuote ? `<p style="${paragraphStyle}">${beforeQuote}</p>` : ''}
+          <div style="margin: 15px 0; padding: 10px 15px; background: ${config.singleQuoteColor}; color: white; border-radius: 15px; font-style: ${config.singleQuoteItalic ? 'italic' : 'normal'}; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+            '${quote}'
+          </div>
+          ${afterQuote ? `<p style="${paragraphStyle}">${afterQuote}</p>` : ''}`;
+        } else {
+          return `<p style="${paragraphStyle}">${trimmedParagraph}</p>`;
+        }
+      }).join('');
+    };
 
     // 태그 스타일 설정
     const getTagStyle = (tagText: string) => {
@@ -375,13 +417,13 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
 
     // 프로필 섹션 HTML (조건부 렌더링) - 미리보기용 프록시 이미지 사용, img 태그로 변경
     const profileSectionHTML = config.hideProfileSection ? '' : `
-    <div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
+    ${!config.hideBackgroundImage ? `<div style="position:relative;width:100%;height:180px;border-top-left-radius:16px;border-top-right-radius:16px;overflow:hidden;">
         <img style="width:100%;height:100%;object-fit:cover;border-top-left-radius:16px;border-top-right-radius:16px;" src="${finalImageUrl}" class="fr-fic fr-dii">
-    </div>
+    </div>` : ''}
 
-    <div style="margin-top:-48px;text-align:center;position:relative;z-index:2;">
+    ${!config.hideProfileImage ? `<div style="margin-top:${!config.hideBackgroundImage ? '-48px' : '0'};text-align:center;position:relative;z-index:2;">
         <img style="width: 96px; height: 96px; border-radius: 50%; border: 3px solid ${themeStyles.profileBorder};" src="${profileImageUrl}" class="fr-fic fr-dii">
-    </div>
+    </div>` : ''}
 
     <div style="padding:1.5rem;text-align:center;">
         <h2 style="margin-bottom:0.5rem;font-weight:600;">
@@ -395,14 +437,38 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
 
     <hr style="border-color: ${config.designTheme === 'white' ? '#eeeeee' : '#444444'};">`;
 
-    return `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+    // 여러 섹션 처리
+    let allHTML = '<p><br></p>';
+
+    sections.forEach((section, index) => {
+      if (!section.content.trim()) return;
+
+      const contentHTML = processTextContent(section.content);
+
+      if (index === 0) {
+        // 첫 번째 박스: 모든 요소 포함
+        allHTML += `<div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
 
     ${profileSectionHTML}
 
     <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
         ${contentHTML}
     </div>
-</div><p><br></p>`;
+</div>`;
+      } else {
+        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+        allHTML += `<p><br></p><div style="font-family:Segoe UI, Roboto, Arial, sans-serif;color:#000000;line-height:1.8;width:100%;max-width:480px;margin:2rem auto;border-radius:16px;background:${themeStyles.cardGradient};box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+
+    <div style="padding:1.5rem;font-size:14px;line-height:1.75;color:${themeStyles.textColor};">
+        ${contentHTML}
+    </div>
+</div>`;
+      }
+    });
+
+    allHTML += '<p><br></p>';
+
+    return allHTML;
   };
 
   return {
@@ -411,4 +477,4 @@ const BingdunGenerator = ({ config }: BingdunGeneratorProps) => {
   };
 };
 
-export default BingdunGenerator; 
+export default CardGenerator; 

@@ -563,8 +563,8 @@ export const useChatchanGeneratorV2 = (config: ChatchanConfig) => {
       html += `<div class="log-section conversation-header" style="background-color: ${elementBgColor}; margin: 0 20px 16px; border-radius: ${logSectionRadius}px; overflow: hidden; border: 1px solid ${borderColor}; padding: 20px 32px;"> <div style="font-size: 12px; font-weight: 600; color: ${narrationColor}; margin-bottom: 4px;">MONO</div> <div style="font-size: 20px; font-weight: 700; color: ${textColor};">CONVERSATION</div> </div>`;
     }
 
-          // 채팅 내용 처리 (기존과 동일)
-      processedChatTexts.forEach((chatText, index) => {
+    // 채팅 내용 처리 (기존과 동일)
+    processedChatTexts.forEach((chatText, index) => {
       if (!chatText?.trim() && chatTexts.length > 1 && index > 0) {
         return;
       }
@@ -739,14 +739,20 @@ export const useChatchanGeneratorV2 = (config: ChatchanConfig) => {
   };
 
   const generateHTML = useMemo(() => {
-    // content가 여러 섹션으로 나뉘어 있을 수 있으므로 \n\n으로 분할
-    const chatTexts = config.content ? config.content.split('\n\n').filter(text => text.trim()) : [''];
+    // 특별한 구분자로 분할하여 채팅섹션 추가로 생성된 섹션만 분리
+    // 일반 줄바꿈(1-2개)으로는 새로운 챗로그를 만들지 않음
+    const chatTexts = config.content ? 
+      config.content.split(/\n\n==CHAT_SECTION_SEPARATOR==\n\n/).filter(text => text.trim()) : 
+      [''];
     return formatChatToHTML(chatTexts.length > 0 ? chatTexts : [''], config);
   }, [config]);
 
   const generatePreviewHTML = useMemo(() => {
-    // content가 여러 섹션으로 나뉘어 있을 수 있으므로 \n\n으로 분할
-    const chatTexts = config.content ? config.content.split('\n\n').filter(text => text.trim()) : [''];
+    // 특별한 구분자로 분할하여 채팅섹션 추가로 생성된 섹션만 분리
+    // 일반 줄바꿈(1-2개)으로는 새로운 챗로그를 만들지 않음
+    const chatTexts = config.content ? 
+      config.content.split(/\n\n==CHAT_SECTION_SEPARATOR==\n\n/).filter(text => text.trim()) : 
+      [''];
     return formatChatToPreviewHTML(chatTexts.length > 0 ? chatTexts : [''], config);
   }, [config]);
 

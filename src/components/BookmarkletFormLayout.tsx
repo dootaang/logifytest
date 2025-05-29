@@ -19,6 +19,12 @@ interface WordReplacement {
   to: string;
 }
 
+// 채팅 섹션 인터페이스 추가
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 interface BookmarkletConfig {
   content: string;
   backgroundColor: string;
@@ -32,6 +38,8 @@ interface BookmarkletConfig {
   padding: number;
   boxShadow: string;
   wordReplacements: WordReplacement[];
+  // chatSections 추가
+  chatSections?: ChatSection[];
 }
 
 interface BookmarkletFormLayoutProps {
@@ -52,11 +60,111 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
   onReset
 }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // 단일 텍스트에어리어 대신 chatSections 관리
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
   
   // 히스토리 관리 - 초기값도 안전하게 처리
   const [history, setHistory] = useState<string[]>([config.content || '']);
   const [historyIndex, setHistoryIndex] = useState(0);
+
+  // 자동 저장 키 상수
+  const AUTOSAVE_PREFIX = 'autoSavedBookmarklet_v1_';
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 채팅 섹션 업데이트
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
+    setChatSections(newSections);
+    
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `bookmarklet_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 본문 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 본문 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
 
   // 다크모드 감지
   useEffect(() => {
@@ -97,8 +205,8 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
       setHistoryIndex(newIndex);
       const content = history[newIndex] || '';
       onConfigChange({ content });
-      if (textareaRef.current) {
-        textareaRef.current.value = content;
+      if (textareaRefs.current['default']) {
+        textareaRefs.current['default']!.value = content;
       }
     }
   }, [historyIndex, history, onConfigChange]);
@@ -110,8 +218,8 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
       setHistoryIndex(newIndex);
       const content = history[newIndex] || '';
       onConfigChange({ content });
-      if (textareaRef.current) {
-        textareaRef.current.value = content;
+      if (textareaRefs.current['default']) {
+        textareaRefs.current['default']!.value = content;
       }
     }
   }, [historyIndex, history, onConfigChange]);
@@ -156,8 +264,9 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
 
   // 텍스트 편집 도구 함수들
   const applyMarkdown = (type: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    // 첫 번째 섹션(default)에 대해서만 작동
+    const textarea = textareaRefs.current[chatSections[0]?.id];
+    if (!textarea || chatSections.length === 0) return;
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -198,40 +307,20 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
     }
     
     const newValue = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
-    const cursorPos = selectedText && isTextWrapped(selectedText, prefix, suffix) 
-      ? start + replacement.length 
-      : start + prefix.length;
     
-    textarea.value = newValue;
-    if (!selectedText || isTextWrapped(selectedText, prefix, suffix)) {
-      textarea.setSelectionRange(cursorPos, cursorPos);
-    }
-    textarea.focus();
+    // 첫 번째 섹션 업데이트
+    updateChatSection(chatSections[0].id, newValue);
+    
+    // 커서 위치 조정
+    setTimeout(() => {
+      const newCursorPos = start + replacement.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
     
     // 히스토리에 추가
-    addToHistory(newValue || '');
-    
-    // 내용 업데이트
-    onConfigChange({ content: newValue || '' });
+    addToHistory(newValue);
   };
-
-  // 텍스트 변경 핸들러
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value || ''; // undefined 방어
-    onConfigChange({ content: newContent });
-    
-    // 이전 타이머 클리어
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    // 히스토리에 추가 (디바운스 효과)
-    timeoutRef.current = setTimeout(() => {
-      addToHistory(newContent);
-    }, 500);
-  }, [onConfigChange, addToHistory]);
 
   // RisuAI 클립보드 데이터에서 번역된 텍스트 추출 함수
   const extractTranslatedTextFromRisuAI = (htmlContent: string): string | null => {
@@ -552,15 +641,6 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
     }
   }, [onConfigChange, addToHistory]);
 
-  // 컴포넌트 언마운트 시 타이머 정리
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
   // 모던 스타일 버튼 컴포넌트
   const StyleButton = ({ type, label, color, onClick }: {
     type: string
@@ -594,8 +674,6 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
             <h1>📚 북마클릿형 생성기</h1>
             <p>심플하고 깔끔한 북마클릿 스타일 로그를 생성합니다</p>
           </div>
-
-
 
           {/* 기본 설정 */}
           <ModernSection title="⚙️ 기본 설정">
@@ -684,60 +762,60 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
                 label="내부 여백 (rem)"
               />
             </ModernFormGroup>
-                  </ModernSection>
+          </ModernSection>
 
-        {/* 단어 변환 기능 (제리형에서 이식) */}
-        <ModernSection title="🔄 단어 변환">
-          <ModernHint>
-            <p><strong>💡 사용법:</strong></p>
-            <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
-            <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
-            <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
-          </ModernHint>
-          {config.wordReplacements.map((replacement, index) => (
-            <div key={index} style={{ 
-              display: 'flex', 
-              gap: '12px', 
-              alignItems: 'center', 
-              marginBottom: '12px',
-              padding: '12px',
-              backgroundColor: 'var(--surface)',
-              borderRadius: '8px',
-              border: '1px solid var(--border)'
-            }}>
-              <ModernInput
-                value={replacement.from}
-                onChange={(value) => handleWordReplacementChange(index, 'from', value)}
-                placeholder="변경할 단어"
-              />
-              <span style={{ 
-                fontSize: '18px', 
-                color: 'var(--text-secondary)',
-                fontWeight: 'bold'
-              }}>→</span>
-              <ModernInput
-                value={replacement.to}
-                onChange={(value) => handleWordReplacementChange(index, 'to', value)}
-                placeholder="대체할 단어"
-              />
-              <ModernButton
-                danger
-                onClick={() => removeWordReplacement(index)}
-                style={{ padding: '8px 12px', fontSize: '12px' }}
-              >
-                삭제
+          {/* 단어 변환 기능 (제리형에서 이식) */}
+          <ModernSection title="🔄 단어 변환">
+            <ModernHint>
+              <p><strong>💡 사용법:</strong></p>
+              <p>• 변경할 단어와 대체할 단어를 입력하세요</p>
+              <p>• 예: "종원" → "유저", "AI" → "봇" 등</p>
+              <p>• 정규표현식이 지원되므로 패턴 매칭도 가능합니다</p>
+            </ModernHint>
+            {config.wordReplacements.map((replacement, index) => (
+              <div key={index} style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                alignItems: 'center', 
+                marginBottom: '12px',
+                padding: '12px',
+                backgroundColor: 'var(--surface)',
+                borderRadius: '8px',
+                border: '1px solid var(--border)'
+              }}>
+                <ModernInput
+                  value={replacement.from}
+                  onChange={(value) => handleWordReplacementChange(index, 'from', value)}
+                  placeholder="변경할 단어"
+                />
+                <span style={{ 
+                  fontSize: '18px', 
+                  color: 'var(--text-secondary)',
+                  fontWeight: 'bold'
+                }}>→</span>
+                <ModernInput
+                  value={replacement.to}
+                  onChange={(value) => handleWordReplacementChange(index, 'to', value)}
+                  placeholder="대체할 단어"
+                />
+                <ModernButton
+                  danger
+                  onClick={() => removeWordReplacement(index)}
+                  style={{ padding: '8px 12px', fontSize: '12px' }}
+                >
+                  삭제
+                </ModernButton>
+              </div>
+            ))}
+            <ModernFormGroup>
+              <ModernButton onClick={addWordReplacement}>
+                + 단어 변환 추가
               </ModernButton>
-            </div>
-          ))}
-          <ModernFormGroup>
-            <ModernButton onClick={addWordReplacement}>
-              + 단어 변환 추가
-            </ModernButton>
-          </ModernFormGroup>
-        </ModernSection>
+            </ModernFormGroup>
+          </ModernSection>
 
-        {/* 텍스트 편집 도구 */}
-        <ModernSection title="✏️ 텍스트 편집 도구">
+          {/* 텍스트 편집 도구 */}
+          <ModernSection title="✏️ 텍스트 편집 도구">
             <ModernFormGroup label="실행취소/다시실행">
               <ModernFormRow>
                 <ModernFormGroup>
@@ -797,31 +875,69 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
               </ModernHint>
             </ModernFormGroup>
 
+            <ModernHint>
+              <strong>💡 문서 자동 변환:</strong> RisuAI나 다른 서비스의 HTML 문서를 붙여넣으면 자동으로 변환됩니다!<br/>
+              단축키: <code>Ctrl+Z</code> (실행취소), <code>Ctrl+Y</code> (다시실행)
+            </ModernHint>
+
             <ModernFormGroup label="본문 내용">
-              <textarea
-                ref={textareaRef}
-                value={config.content}
-                onChange={handleTextChange}
-                onPaste={handlePaste}
-                placeholder="본문 내용을 입력하세요..."
-                style={{
-                  width: '100%',
-                  height: '300px',
-                  padding: '12px',
-                  border: `1px solid ${STYLES.border}`,
-                  borderRadius: `${STYLES.radius_normal}px`,
-                  backgroundColor: isDarkMode ? '#3a3b3c' : '#ffffff',
-                  color: isDarkMode ? '#e4e6eb' : STYLES.text,
-                  fontSize: `${STYLES.font_size_normal}px`,
-                  fontFamily: STYLES.font_family,
-                  resize: 'vertical',
-                  outline: 'none'
-                }}
-              />
-              <ModernHint>
-                <p>💡 <strong>RisuAI 번역 지원:</strong> RisuAI에서 번역 버튼(🌐)을 누른 후 복사 버튼(📋)을 클릭하여 복사한 내용을 여기에 붙여넣으면 번역된 한국어 텍스트만 자동으로 추출됩니다!</p>
-                <p>🔧 <strong>자동 정리:</strong> CSS 코드, 영어 원문, 메타데이터 등은 자동으로 제거되고 순수한 번역 텍스트만 남습니다.</p>
-              </ModernHint>
+              {/* 본문 섹션들 */}
+              {chatSections.map((section, index) => (
+                <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                  {/* 섹션 헤더 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      본문 내용 {chatSections.length > 1 ? `${index + 1}` : ''}
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <ModernButton
+                        onClick={() => moveChatSection(section.id, 'up')}
+                        disabled={index === 0}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        ▲
+                      </ModernButton>
+                      <ModernButton
+                        onClick={() => moveChatSection(section.id, 'down')}
+                        disabled={index === chatSections.length - 1}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        ▼
+                      </ModernButton>
+                      <ModernButton
+                        danger
+                        onClick={() => removeChatSection(section.id)}
+                        disabled={chatSections.length <= 1}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        X
+                      </ModernButton>
+                    </div>
+                  </div>
+
+                  {/* 텍스트에어리어 */}
+                  <textarea
+                    ref={(el) => {
+                      if (el) {
+                        textareaRefs.current[section.id] = el;
+                      }
+                    }}
+                    value={section.content}
+                    onChange={(e) => updateChatSection(section.id, e.target.value)}
+                    placeholder="본문 내용을 입력하세요..."
+                    rows={12}
+                    className="form-input form-textarea"
+                    style={{ width: '100%', minHeight: '200px' }}
+                  />
+                </div>
+              ))}
+
+              {/* 본문 섹션 추가 버튼 */}
+              <ModernFormGroup>
+                <ModernButton onClick={addChatSection}>
+                  본문 섹션 추가
+                </ModernButton>
+              </ModernFormGroup>
             </ModernFormGroup>
           </ModernSection>
 

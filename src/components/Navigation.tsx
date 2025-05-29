@@ -10,7 +10,7 @@ const generators = [
   { id: 'banner', name: '배너형', icon: '🏞️', path: '/banner', desc: '크고 아름다워' },
   { id: 'jelly', name: '제리형', icon: '🐭', path: '/jelly', desc: '센스있는 이쁜 것' },
   { id: 'chatchan', name: '챗챈형', icon: '💬', path: '/chatchan', desc: '챗챈1.3 긴-빠이' },
-  { id: 'bingdun', name: '빙둔형', icon: '🏂', path: '/bingdun', desc: '초기 로그제조기+α' },
+  { id: 'card', name: '카드형', icon: '🃊', path: '/card', desc: '배경과 프사' },
   { id: 'viewext', name: '뷰익형', icon: '🔖', path: '/viewext', desc: '뷰어 익스텐션' }
 ]
 

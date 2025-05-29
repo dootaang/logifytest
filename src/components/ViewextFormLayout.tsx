@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ModernButton,
   ModernInput,
@@ -19,6 +19,12 @@ import ViewextGenerator from './ViewextGenerator'
 interface WordReplacement {
   from: string;
   to: string;
+}
+
+// 채팅 섹션 인터페이스 추가
+interface ChatSection {
+  id: string;
+  content: string;
 }
 
 interface ViewextConfig {
@@ -54,6 +60,14 @@ interface ViewextConfig {
   lineHeight: number;
   letterSpacing: number;
   
+  // 텍스트 커스터마이징 설정
+  boldEnabled: boolean;
+  italicEnabled: boolean;
+  highlightBoldEnabled: boolean;
+  highlightItalicEnabled: boolean;
+  dialogueBoldEnabled: boolean;
+  dialogueItalicEnabled: boolean;
+  
   // 레이아웃 설정
   maxWidth: number;
   paddingTop: number;
@@ -70,6 +84,9 @@ interface ViewextConfig {
   
   // 단어 변환 기능
   wordReplacements: WordReplacement[];
+  
+  // chatSections 추가
+  chatSections?: ChatSection[];
 }
 
 interface ViewextFormLayoutProps {
@@ -93,6 +110,108 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
   const [selectedPreset, setSelectedPreset] = useState('alternate-hunters');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
+  
+  // 채팅 섹션 관리 추가
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+
+  // 자동 저장 키 상수
+  const AUTOSAVE_PREFIX = 'autoSavedViewext_v1_';
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 채팅 섹션 업데이트
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
+    setChatSections(newSections);
+    
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `viewext_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 본문 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 본문 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
 
   // 다크모드 감지
   useEffect(() => {
@@ -180,11 +299,17 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
 
   // 이미지 URL 변경 핸들러 (HTML 자동 추출 포함)
   const handleImageUrlChange = (value: string) => {
-    // 이미지 URL 필드에서 HTML 코드 자동 추출
-    if (typeof value === 'string' && isHtmlImageTag(value)) {
-      value = extractImageUrlFromHtml(value);
+    if (isHtmlImageTag(value)) {
+      const extractedUrl = extractImageUrlFromHtml(value);
+      handleInputChange('mainImageUrl', extractedUrl);
+    } else {
+      handleInputChange('mainImageUrl', value);
     }
-    handleInputChange('mainImageUrl', value);
+  };
+
+  // 이미지 삭제 함수 추가
+  const handleImageDelete = () => {
+    handleInputChange('mainImageUrl', '');
   };
 
   // 단어 변환 기능 (제리형에서 이식)
@@ -279,7 +404,7 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
             {[
               { id: 'basic', label: '기본 설정', icon: '📝' },
               { id: 'style', label: '스타일', icon: '🎨' },
-              { id: 'colors', label: '색상', icon: '🌈' },
+              { id: 'colors', label: '텍스트', icon: '✏️' },
               { id: 'advanced', label: '고급', icon: '⚙️' }
             ].map((tab) => (
               <button
@@ -311,23 +436,73 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
                 </ModernSection>
 
                 <ModernSection title="콘텐츠">
+                  <ModernHint>
+                    <strong>본문 작성 안내</strong>
+                    <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                      - 문단 구분: 빈 줄로 구분<br/>
+                      - 파란색 강조: '작은따옴표' 사용<br/>
+                      - 노란색 대화: "큰따옴표" 사용<br/>
+                      - 볼드: **텍스트**, 이탤릭: *텍스트*<br/>
+                      - 여러 개의 본문 섹션을 추가해서 구분하여 작성할 수 있습니다
+                    </div>
+                  </ModernHint>
+
+                  {/* 본문 섹션들 */}
+                  {chatSections.map((section, index) => (
+                    <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                      {/* 섹션 헤더 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          본문 내용 {chatSections.length > 1 ? `${index + 1}` : ''}
+                        </label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <ModernButton
+                            onClick={() => moveChatSection(section.id, 'up')}
+                            disabled={index === 0}
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                          >
+                            ▲
+                          </ModernButton>
+                          <ModernButton
+                            onClick={() => moveChatSection(section.id, 'down')}
+                            disabled={index === chatSections.length - 1}
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                          >
+                            ▼
+                          </ModernButton>
+                          <ModernButton
+                            danger
+                            onClick={() => removeChatSection(section.id)}
+                            disabled={chatSections.length <= 1}
+                            style={{ padding: '4px 8px', fontSize: '12px' }}
+                          >
+                            X
+                          </ModernButton>
+                        </div>
+                      </div>
+
+                      {/* 텍스트에어리어 */}
+                      <textarea
+                        ref={(el) => {
+                          if (el) {
+                            textareaRefs.current[section.id] = el;
+                          }
+                        }}
+                        value={section.content}
+                        onChange={(e) => updateChatSection(section.id, e.target.value)}
+                        placeholder="본문 내용을 입력하세요..."
+                        rows={15}
+                        className="form-input form-textarea"
+                        style={{ width: '100%', minHeight: '200px' }}
+                      />
+                    </div>
+                  ))}
+
+                  {/* 본문 섹션 추가 버튼 */}
                   <ModernFormGroup>
-                    <ModernTextarea
-                      value={config.content}
-                      onChange={(value) => handleInputChange('content', value)}
-                      placeholder="서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다.
-
-당신은 '등록 및 초기 측정'라고 표시된 접수처 앞에 섰다.
-
-&quot;헌터 협회에 오신 것을 환영합니다.&quot;"
-                      rows={15}
-                    />
-                    <ModernHint>
-                      • 문단 구분: 빈 줄로 구분<br/>
-                      • 파란색 강조: '작은따옴표' 사용<br/>
-                      • 노란색 대화: "큰따옴표" 사용<br/>
-                      • 볼드: **텍스트**, 이탤릭: *텍스트*
-                    </ModernHint>
+                    <ModernButton onClick={addChatSection}>
+                      본문 섹션 추가
+                    </ModernButton>
                   </ModernFormGroup>
                 </ModernSection>
 
@@ -469,6 +644,54 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
                         </ModernHint>
                       </ModernFormGroup>
                       
+                      {/* 현재 이미지 표시 및 삭제 기능 */}
+                      {config.mainImageUrl && (
+                        <ModernFormGroup label="🖼️ 현재 메인 이미지">
+                          <div style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '10px',
+                            backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                              <img 
+                                src={config.mainImageUrl} 
+                                alt="메인 이미지 미리보기"
+                                style={{
+                                  width: '60px',
+                                  height: '40px',
+                                  objectFit: 'cover',
+                                  borderRadius: '4px',
+                                  border: '1px solid #cbd5e0'
+                                }}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                              <span style={{
+                                flex: 1,
+                                fontSize: '14px',
+                                color: isDarkMode ? '#a0aec0' : '#718096',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {config.mainImageUrl.length > 50 
+                                  ? config.mainImageUrl.substring(0, 50) + '...' 
+                                  : config.mainImageUrl}
+                              </span>
+                            </div>
+                            <ModernButton 
+                              danger 
+                              onClick={handleImageDelete}
+                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                            >
+                              🗑️ 삭제
+                            </ModernButton>
+                          </div>
+                        </ModernFormGroup>
+                      )}
+
                       <ModernFormGroup label="이미지 최대 너비 (px)">
                         <ModernSlider
                           value={config.imageMaxWidth}
@@ -658,6 +881,121 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
 
             {activeTab === 'colors' && (
               <div className="tab-panel">
+                {/* 텍스트 커스터마이징 섹션 */}
+                <ModernSection title="🎯 텍스트 커스터마이징">
+                  <ModernHint>
+                    <strong>텍스트 스타일 설정</strong>
+                    <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                      - 일반 텍스트: **볼드**, *기울기* 마크다운 문법<br/>
+                      - 작은따옴표 '강조': 파란색 하이라이트 박스<br/>
+                      - 큰따옴표 "대화": 노란색 대화 박스
+                    </div>
+                  </ModernHint>
+                  
+                  <ModernFormRow>
+                    <ModernFormGroup label="일반 텍스트">
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <ModernCheckbox
+                          checked={config.boldEnabled}
+                          onChange={(checked) => handleInputChange('boldEnabled', checked)}
+                          label="볼드체 활성화 (**텍스트**)"
+                        />
+                        <ModernCheckbox
+                          checked={config.italicEnabled}
+                          onChange={(checked) => handleInputChange('italicEnabled', checked)}
+                          label="기울기 활성화 (*텍스트*)"
+                        />
+                      </div>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+                </ModernSection>
+
+                <ModernSection title="파란색 강조 ('작은따옴표')">
+                  <ModernFormRow>
+                    <ModernFormGroup label="배경색">
+                      <ModernInput
+                        value={config.highlightBoxColor}
+                        onChange={(value) => handleInputChange('highlightBoxColor', value)}
+                        placeholder="rgba(107, 182, 255, 0.1)"
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="테두리 색상">
+                      <ModernColorPicker
+                        value={config.highlightBoxBorderColor}
+                        onChange={(value) => handleInputChange('highlightBoxBorderColor', value)}
+                      />
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormRow>
+                    <ModernFormGroup label="텍스트 색상">
+                      <ModernColorPicker
+                        value={config.highlightBoxTextColor}
+                        onChange={(value) => handleInputChange('highlightBoxTextColor', value)}
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="텍스트 스타일">
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <ModernCheckbox
+                          checked={config.highlightBoldEnabled}
+                          onChange={(checked) => handleInputChange('highlightBoldEnabled', checked)}
+                          label="볼드체"
+                        />
+                        <ModernCheckbox
+                          checked={config.highlightItalicEnabled}
+                          onChange={(checked) => handleInputChange('highlightItalicEnabled', checked)}
+                          label="기울기"
+                        />
+                      </div>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+                </ModernSection>
+
+                <ModernSection title="노란색 대화 (&quot;큰따옴표&quot;)">
+                  <ModernFormRow>
+                    <ModernFormGroup label="배경색">
+                      <ModernInput
+                        value={config.dialogueBoxColor}
+                        onChange={(value) => handleInputChange('dialogueBoxColor', value)}
+                        placeholder="rgba(138, 121, 93, 0.1)"
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="테두리 색상">
+                      <ModernColorPicker
+                        value={config.dialogueBoxBorderColor}
+                        onChange={(value) => handleInputChange('dialogueBoxBorderColor', value)}
+                      />
+                    </ModernFormGroup>
+                  </ModernFormRow>
+
+                  <ModernFormRow>
+                    <ModernFormGroup label="텍스트 색상">
+                      <ModernColorPicker
+                        value={config.dialogueBoxTextColor}
+                        onChange={(value) => handleInputChange('dialogueBoxTextColor', value)}
+                      />
+                    </ModernFormGroup>
+                    
+                    <ModernFormGroup label="텍스트 스타일">
+                      <div style={{ display: 'flex', gap: '16px' }}>
+                        <ModernCheckbox
+                          checked={config.dialogueBoldEnabled}
+                          onChange={(checked) => handleInputChange('dialogueBoldEnabled', checked)}
+                          label="볼드체"
+                        />
+                        <ModernCheckbox
+                          checked={config.dialogueItalicEnabled}
+                          onChange={(checked) => handleInputChange('dialogueItalicEnabled', checked)}
+                          label="기울기"
+                        />
+                      </div>
+                    </ModernFormGroup>
+                  </ModernFormRow>
+                </ModernSection>
+
                 <ModernSection title="기본 색상">
                   <ModernFormRow>
                     <ModernFormGroup label="배경색">
@@ -692,58 +1030,6 @@ const ViewextFormLayout: React.FC<ViewextFormLayoutProps> = ({
                     <ModernColorPicker
                       value={config.borderColor}
                       onChange={(value) => handleInputChange('borderColor', value)}
-                    />
-                  </ModernFormGroup>
-                </ModernSection>
-
-                <ModernSection title="파란색 강조 ('작은따옴표')">
-                  <ModernFormRow>
-                    <ModernFormGroup label="배경색">
-                      <ModernInput
-                        value={config.highlightBoxColor}
-                        onChange={(value) => handleInputChange('highlightBoxColor', value)}
-                        placeholder="rgba(107, 182, 255, 0.1)"
-                      />
-                    </ModernFormGroup>
-                    
-                    <ModernFormGroup label="테두리 색상">
-                      <ModernColorPicker
-                        value={config.highlightBoxBorderColor}
-                        onChange={(value) => handleInputChange('highlightBoxBorderColor', value)}
-                      />
-                    </ModernFormGroup>
-                  </ModernFormRow>
-
-                  <ModernFormGroup label="텍스트 색상">
-                    <ModernColorPicker
-                      value={config.highlightBoxTextColor}
-                      onChange={(value) => handleInputChange('highlightBoxTextColor', value)}
-                    />
-                  </ModernFormGroup>
-                </ModernSection>
-
-                <ModernSection title="노란색 대화 (&quot;큰따옴표&quot;)">
-                  <ModernFormRow>
-                    <ModernFormGroup label="배경색">
-                      <ModernInput
-                        value={config.dialogueBoxColor}
-                        onChange={(value) => handleInputChange('dialogueBoxColor', value)}
-                        placeholder="rgba(138, 121, 93, 0.1)"
-                      />
-                    </ModernFormGroup>
-                    
-                    <ModernFormGroup label="테두리 색상">
-                      <ModernColorPicker
-                        value={config.dialogueBoxBorderColor}
-                        onChange={(value) => handleInputChange('dialogueBoxBorderColor', value)}
-                      />
-                    </ModernFormGroup>
-                  </ModernFormRow>
-
-                  <ModernFormGroup label="텍스트 색상">
-                    <ModernColorPicker
-                      value={config.dialogueBoxTextColor}
-                      onChange={(value) => handleInputChange('dialogueBoxTextColor', value)}
                     />
                   </ModernFormGroup>
                 </ModernSection>

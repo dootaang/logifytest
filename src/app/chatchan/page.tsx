@@ -81,14 +81,76 @@ export default function ChatchanPage() {
     }
   }
 
-  // localStorage에 설정 저장하기
+  // localStorage에 설정 저장하기 (용량 제한 및 이미지 데이터 제외)
   const saveConfig = (newConfig: any) => {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('chatchanConfig', JSON.stringify(newConfig))
+        // 저장할 설정에서 이미지 데이터 제외 (base64 이미지는 용량이 매우 큼)
+        const configToSave = { ...newConfig };
+        
+        // 이미지 URL이 base64 데이터인 경우 저장에서 제외
+        if (configToSave.characterImageUrl && configToSave.characterImageUrl.startsWith('data:')) {
+          delete configToSave.characterImageUrl;
+          console.log('💾 base64 이미지는 용량 절약을 위해 설정 저장에서 제외됩니다.');
+        }
+        
+        // 저장할 데이터를 JSON으로 변환
+        const dataToSave = JSON.stringify(configToSave);
+        
+        // 데이터 크기 체크 (2MB 제한)
+        const dataSizeKB = new Blob([dataToSave]).size / 1024;
+        const maxSizeKB = 2048; // 2MB
+        
+        if (dataSizeKB > maxSizeKB) {
+          console.warn(`⚠️ 설정 데이터가 너무 큽니다: ${dataSizeKB.toFixed(1)}KB > ${maxSizeKB}KB`);
+          console.warn('💡 base64 이미지나 긴 텍스트가 포함되어 있는지 확인해주세요.');
+          return; // 저장하지 않음
+        }
+        
+        // localStorage에 저장 시도
+        localStorage.setItem('chatchanConfig', dataToSave);
+        console.log(`💾 챗챈 설정 저장 완료 (${dataSizeKB.toFixed(1)}KB)`);
       }
     } catch (error) {
-      console.error('챗챈 설정을 저장하는 중 오류 발생:', error)
+      console.error('챗챈 설정을 저장하는 중 오류 발생:', error);
+      
+      // QuotaExceededError 처리
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('📦 localStorage 용량이 부족합니다.');
+        
+        // 기존 저장된 설정들을 정리하여 공간 확보 시도
+        try {
+          const keysToClean = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('auto') || key.includes('History') || key.includes('Temp'))) {
+              keysToClean.push(key);
+            }
+          }
+          
+          // 임시 데이터들 삭제
+          keysToClean.forEach(key => {
+            try {
+              localStorage.removeItem(key);
+              console.log(`🧹 임시 데이터 정리: ${key}`);
+            } catch (cleanError) {
+              console.warn(`정리 실패: ${key}`, cleanError);
+            }
+          });
+          
+          // 다시 저장 시도 (이미지 데이터 완전 제외)
+          const cleanConfig = { ...newConfig };
+          delete cleanConfig.characterImageUrl; // 이미지 URL 완전 제외
+          
+          const cleanData = JSON.stringify(cleanConfig);
+          localStorage.setItem('chatchanConfig', cleanData);
+          console.log('✅ 정리 후 저장 성공');
+          
+        } catch (retryError) {
+          console.error('정리 후에도 저장 실패:', retryError);
+          alert('💾 설정 저장에 실패했습니다.\n\n브라우저 저장 공간이 부족할 수 있습니다.\n(이미지는 임시로만 사용되며 자동 저장되지 않습니다)');
+        }
+      }
     }
   }
 

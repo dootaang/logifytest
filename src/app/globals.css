@@ -517,8 +517,6 @@ body {
   border-radius: var(--radius-normal);
   padding: var(--spacing-normal);
   box-shadow: var(--shadow);
-  position: sticky;
-  top: var(--spacing-normal);
 }
 
 .preview-header {

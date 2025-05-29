@@ -20,6 +20,12 @@ interface Config {
   paragraphIndent: boolean
   content: string
   wordReplacements: Array<{ from: string; to: string }>
+  chatSections?: ChatSection[]
+}
+
+interface ChatSection {
+  id: string
+  content: string
 }
 
 interface JellyGeneratorProps {
@@ -63,7 +69,7 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
     return url;
   };
 
-  // 미리보기용 이미지 URL 생성 (프록시를 통해 CORS 우회)
+  // 미리보기용 이미지 URL 생성 (CORS 우회)
   const getPreviewImageUrl = (url: string): string => {
     const normalizedUrl = normalizeImageUrl(url);
     
@@ -77,15 +83,9 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
       return normalizedUrl;
     }
     
-    // 아카라이브 이미지인 경우 프록시를 통해 로드
-    if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
-      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
-      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
-      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
-    }
-    
-    // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
-    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
+    // 미리보기에서는 원본 URL 사용 (CORS 오류 무시)
+    // img 태그에서 crossorigin 없이 로드하면 CORS 오류가 콘솔에만 표시되고 이미지는 정상 표시됨
+    return normalizedUrl;
   };
 
   const applyWordReplacements = (text: string) => {
@@ -169,15 +169,24 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
   }
 
   const generateHTML = () => {
-    const contentHTML = processContent(config.content)
-    
-    // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
-    const finalImageUrl = normalizeImageUrl(config.backgroundImage)
+    // chatSections이 있으면 사용, 없으면 기존 content 사용
+    const sections = config.chatSections && config.chatSections.length > 0 
+      ? config.chatSections 
+      : [{ id: 'default', content: config.content }];
 
-    return `<p>
-	<br>
-</p>
-<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
+    // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
+    const finalImageUrl = normalizeImageUrl(config.backgroundImage);
+
+    let allHTML = '<p><br></p>';
+
+    sections.forEach((section, index) => {
+      if (!section.content.trim()) return;
+
+      const contentHTML = processContent(section.content);
+
+      if (index === 0) {
+        // 첫 번째 박스: 모든 요소 포함
+        allHTML += `<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
 	<div style="height: 85px;margin:-1px -1px 0px -1px;">
 		<img src="${finalImageUrl}" alt="배경 이미지" style="width:100%;height:170px;object-fit:cover;object-position:50% 40%;border-radius:19px 19px 0px 0px;display:block;" />
 		<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;margin-top:-170px;">
@@ -191,24 +200,45 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
 			<br>
 		</p>
 ${contentHTML}
-	</div></div>
+	</div></div>`;
+      } else {
+        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+        allHTML += `<p><br></p><div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:20px auto;">
+	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;">
 
-<p>
-	<br>
-</p>`
+		<p style="line-height:2;margin:2rem 0;font-size:13.8px;letter-spacing:-0.8px;">
+			<br>
+		</p>
+${contentHTML}
+	</div></div>`;
+      }
+    });
+
+    allHTML += '<p><br></p>';
+
+    return allHTML;
   }
 
   // 미리보기 전용 HTML 생성 (프록시 사용)
   const generatePreviewHTML = () => {
-    const contentHTML = processContent(config.content)
+    // chatSections이 있으면 사용, 없으면 기존 content 사용
+    const sections = config.chatSections && config.chatSections.length > 0 
+      ? config.chatSections 
+      : [{ id: 'default', content: config.content }];
     
     // 미리보기용 - 프록시 사용 (CORS 우회)
-    const finalImageUrl = getPreviewImageUrl(config.backgroundImage)
+    const finalImageUrl = getPreviewImageUrl(config.backgroundImage);
 
-    return `<p>
-	<br>
-</p>
-<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
+    let allHTML = '<p><br></p>';
+
+    sections.forEach((section, index) => {
+      if (!section.content.trim()) return;
+
+      const contentHTML = processContent(section.content);
+
+      if (index === 0) {
+        // 첫 번째 박스: 모든 요소 포함
+        allHTML += `<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
 	<div style="height: 85px;margin:-1px -1px 0px -1px;">
 		<img src="${finalImageUrl}" alt="배경 이미지" style="width:100%;height:170px;object-fit:cover;object-position:50% 40%;border-radius:19px 19px 0px 0px;display:block;" />
 		<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;margin-top:-170px;">
@@ -222,11 +252,23 @@ ${contentHTML}
 			<br>
 		</p>
 ${contentHTML}
-	</div></div>
+	</div></div>`;
+      } else {
+        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
+        allHTML += `<p><br></p><div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:20px auto;">
+	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;">
 
-<p>
-	<br>
-</p>`
+		<p style="line-height:2;margin:2rem 0;font-size:13.8px;letter-spacing:-0.8px;">
+			<br>
+		</p>
+${contentHTML}
+	</div></div>`;
+      }
+    });
+
+    allHTML += '<p><br></p>';
+
+    return allHTML;
   }
 
   return {

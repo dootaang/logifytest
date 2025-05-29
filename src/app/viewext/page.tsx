@@ -10,19 +10,15 @@ import { copyToAdvancedClipboard, copyToSimpleClipboard } from '@/utils/advanced
 // 뷰익형 기본 설정 (새로운 구조)
 const defaultViewextConfig = {
   // 기본 콘텐츠
-  content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다.
+  content: `아스가르드 오딘궁의 신들이 내려와 우리를 보호해주신다고 믿어왔지만, 그들은 어디에도 없었다.
 
-제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
+'우리를 버렸구나, 아니면 애초부터 없었던 건가?'
 
-당신은 '등록 및 초기 측정'라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다.
+"괜찮아, 우리 스스로 해내면 돼."
 
-그녀가 단말기에서 고개를 들자, 그녀의 시선이 당신과 정면으로 마주쳤다. 거기에는 어떤 판단도 없이, 그저 차분하고 전문적인 평가만이 담겨 있었다. 그녀는 약간의 연습된 미소를 지어 보였다.
+라그나로크가 시작된 지 100년이 지났다. 북유럽의 세계수 이그드라실은 말라가고 있고, 아홉 세계는 하나씩 어둠에 잠기고 있다.
 
-"헌터 협회에 오신 것을 환영합니다."
-
-최유진이 배경 소음을 쉽게 뚫고 나가는 명료하고 또렷한 목소리로 말문을 열었다.
-
-"각성을 축하드립니다. 공식 등급 측정을 진행하기 전에, 헌터 프로필에 기록해야 할 몇 가지 필수 세부 정보가 있습니다. 이는 모든 신규 등록자에게 적용되는 표준 절차입니다."`,
+그래도 우리는 살아남았다.`,
   title: 'ALTERNATE HUNTERS',
   
   // 이미지 설정
@@ -52,6 +48,14 @@ const defaultViewextConfig = {
   fontSize: 16,
   lineHeight: 1.5,
   letterSpacing: 0,
+  
+  // 텍스트 커스터마이징 설정
+  boldEnabled: true,
+  italicEnabled: true,
+  highlightBoldEnabled: true,
+  highlightItalicEnabled: false,
+  dialogueBoldEnabled: true,
+  dialogueItalicEnabled: false,
   
   // 레이아웃 설정
   maxWidth: 55,
@@ -99,14 +103,75 @@ export default function ViewextPage() {
     }
   }
 
-  // localStorage에 설정 저장하기
+  // localStorage에 설정 저장하기 (용량 제한 및 이미지 데이터 제외)
   const saveConfig = (newConfig: any) => {
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('viewextConfig', JSON.stringify(newConfig))
+        // 저장할 설정에서 이미지 데이터 제외 (base64 이미지는 용량이 매우 큼)
+        const configToSave = { ...newConfig };
+        
+        // 이미지 URL이 base64 데이터인 경우 저장에서 제외
+        if (configToSave.mainImageUrl && configToSave.mainImageUrl.startsWith('data:')) {
+          delete configToSave.mainImageUrl;
+          console.log('💾 base64 이미지는 용량 절약을 위해 설정 저장에서 제외됩니다.');
+        }
+        
+        // 저장할 데이터를 JSON으로 변환
+        const dataToSave = JSON.stringify(configToSave);
+        
+        // 데이터 크기 체크 (2MB 제한)
+        const dataSizeKB = new Blob([dataToSave]).size / 1024;
+        const maxSizeKB = 2048; // 2MB
+        
+        if (dataSizeKB > maxSizeKB) {
+          console.warn(`⚠️ 설정 데이터가 너무 큽니다: ${dataSizeKB.toFixed(1)}KB > ${maxSizeKB}KB`);
+          return; // 저장하지 않음
+        }
+        
+        // localStorage에 저장 시도
+        localStorage.setItem('viewextConfig', dataToSave);
+        console.log(`💾 뷰익 설정 저장 완료 (${dataSizeKB.toFixed(1)}KB)`);
       }
     } catch (error) {
-      console.error('뷰익형 설정을 저장하는 중 오류 발생:', error)
+      console.error('뷰익형 설정을 저장하는 중 오류 발생:', error);
+      
+      // QuotaExceededError 처리
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.warn('📦 localStorage 용량이 부족합니다.');
+        
+        // 기존 저장된 설정들을 정리하여 공간 확보 시도
+        try {
+          const keysToClean = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('auto') || key.includes('History') || key.includes('Temp'))) {
+              keysToClean.push(key);
+            }
+          }
+          
+          // 임시 데이터들 삭제
+          keysToClean.forEach(key => {
+            try {
+              localStorage.removeItem(key);
+              console.log(`🧹 임시 데이터 정리: ${key}`);
+            } catch (cleanError) {
+              console.warn(`정리 실패: ${key}`, cleanError);
+            }
+          });
+          
+          // 다시 저장 시도 (이미지 데이터 완전 제외)
+          const cleanConfig = { ...newConfig };
+          delete cleanConfig.mainImageUrl; // 이미지 URL 완전 제외
+          
+          const cleanData = JSON.stringify(cleanConfig);
+          localStorage.setItem('viewextConfig', cleanData);
+          console.log('✅ 정리 후 저장 성공');
+          
+        } catch (retryError) {
+          console.error('정리 후에도 저장 실패:', retryError);
+          alert('💾 설정 저장에 실패했습니다.\n\n브라우저 저장 공간이 부족할 수 있습니다.\n(이미지는 임시로만 사용되며 자동 저장되지 않습니다)');
+        }
+      }
     }
   }
 

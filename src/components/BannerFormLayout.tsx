@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   ModernButton,
   ModernInput,
@@ -153,6 +153,11 @@ interface WordReplacement {
   to: string
 }
 
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 interface BannerConfig {
   // 프로필 설정
   showProfile: boolean
@@ -208,6 +213,7 @@ interface BannerConfig {
   contentTextColor: string
   fontSize: number
   lineHeight: number
+  chatSections: ChatSection[]
 }
 
 interface BannerFormLayoutProps {
@@ -230,6 +236,17 @@ const BannerFormLayout = ({
   const [activeTab, setActiveTab] = useState('content')
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
+  
+  // 채팅 섹션 상태 추가
+  const [chatSections, setChatSections] = useState<ChatSection[]>([
+    { id: 'default', content: config.content || '' }
+  ]);
+  
+  // 텍스트에어리어 참조 추가
+  const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement | null }>({});
+  
+  // 자동 저장 키 상수 추가
+  const AUTOSAVE_PREFIX = 'autoSavedBanner_v1_';
 
   // 다크모드 감지
   useEffect(() => {
@@ -311,6 +328,11 @@ const BannerFormLayout = ({
     return input.includes('<img') && input.includes('src=')
   }
 
+  // 이미지 삭제 함수 추가
+  const handleImageDelete = () => {
+    handleConfigChange('imageUrl', '');
+  };
+
   const handleConfigChange = (field: string, value: any) => {
     // 이미지 URL 필드에서 HTML 코드 자동 추출
     if (field === 'imageUrl' && typeof value === 'string') {
@@ -359,6 +381,99 @@ const BannerFormLayout = ({
     const newReplacements = config.wordReplacements.filter((_, i) => i !== index)
     onConfigChange({ wordReplacements: newReplacements })
   }
+
+  // 자동 저장 설정
+  const setupAutoSave = (sectionId: string, content: string) => {
+    try {
+      localStorage.setItem(`${AUTOSAVE_PREFIX}${sectionId}`, content);
+    } catch (error) {
+      console.error('자동 저장 오류:', error);
+    }
+  };
+
+  // 자동 저장된 내용 불러오기
+  const loadAutoSaved = (sectionId: string): string => {
+    try {
+      return localStorage.getItem(`${AUTOSAVE_PREFIX}${sectionId}`) || '';
+    } catch (error) {
+      console.error('자동 저장 불러오기 오류:', error);
+      return '';
+    }
+  };
+
+  // 채팅 섹션 업데이트
+  const updateChatSection = (sectionId: string, content: string) => {
+    const newSections = chatSections.map(section => 
+      section.id === sectionId ? { ...section, content } : section
+    );
+    setChatSections(newSections);
+    
+    // 자동 저장
+    setupAutoSave(sectionId, content);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 추가
+  const addChatSection = () => {
+    const newId = `banner_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newSection: ChatSection = { id: newId, content: '' };
+    setChatSections(prev => [...prev, newSection]);
+  };
+
+  // 채팅 섹션 삭제
+  const removeChatSection = (sectionId: string) => {
+    if (chatSections.length <= 1) {
+      alert('최소 하나의 내용 섹션은 필요합니다.');
+      return;
+    }
+    
+    if (!confirm('이 내용 섹션을 삭제하시겠습니까?')) {
+      return;
+    }
+    
+    // 자동 저장된 내용 삭제
+    try {
+      localStorage.removeItem(`${AUTOSAVE_PREFIX}${sectionId}`);
+    } catch (error) {
+      console.error('자동 저장 삭제 오류:', error);
+    }
+    
+    const newSections = chatSections.filter(section => section.id !== sectionId);
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
+
+  // 채팅 섹션 이동
+  const moveChatSection = (sectionId: string, direction: 'up' | 'down') => {
+    const currentIndex = chatSections.findIndex(section => section.id === sectionId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= chatSections.length) return;
+    
+    const newSections = [...chatSections];
+    [newSections[currentIndex], newSections[newIndex]] = [newSections[newIndex], newSections[currentIndex]];
+    setChatSections(newSections);
+    
+    // 섹션 배열을 config에 전달
+    const combinedContent = newSections.map(section => section.content).filter(c => c.trim()).join('\n\n');
+    onConfigChange({ 
+      content: combinedContent,
+      chatSections: newSections 
+    });
+  };
 
   const applyTemplate = (templateName: string) => {
     const template = TEMPLATE_PRESETS[templateName as keyof typeof TEMPLATE_PRESETS]
@@ -476,13 +591,71 @@ const BannerFormLayout = ({
           {/* 내용 탭 */}
           {activeTab === 'content' && (
             <ModernSection title="📄 본문 내용">
-              <ModernFormGroup label="본문 내용">
-                <ModernTextarea
-                  value={config.content}
-                  onChange={(value) => handleConfigChange('content', value)}
-                  placeholder="본문 내용을 입력하세요..."
-                  rows={15}
-                />
+              <ModernHint>
+                <strong>본문 작성 안내</strong>
+                <div style={{ marginTop: '8px', fontSize: '13px', lineHeight: 1.7 }}>
+                  - 대화 부분은 큰따옴표 "텍스트" 또는 둥근따옴표 "텍스트"로 감싸주세요<br />
+                  - 속마음 부분은 작은따옴표 '텍스트'로 감싸주세요<br />
+                  - 여러 개의 본문 섹션을 추가해서 구분하여 작성할 수 있습니다
+                </div>
+              </ModernHint>
+
+              {/* 본문 섹션들 */}
+              {chatSections.map((section, index) => (
+                <div key={section.id} style={{ marginBottom: '20px', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
+                  {/* 섹션 헤더 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <label style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      본문 내용 {chatSections.length > 1 ? `${index + 1}` : ''}
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <ModernButton
+                        onClick={() => moveChatSection(section.id, 'up')}
+                        disabled={index === 0}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        ▲
+                      </ModernButton>
+                      <ModernButton
+                        onClick={() => moveChatSection(section.id, 'down')}
+                        disabled={index === chatSections.length - 1}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        ▼
+                      </ModernButton>
+                      <ModernButton
+                        danger
+                        onClick={() => removeChatSection(section.id)}
+                        disabled={chatSections.length <= 1}
+                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                      >
+                        X
+                      </ModernButton>
+                    </div>
+                  </div>
+
+                  {/* 텍스트에어리어 */}
+                  <textarea
+                    ref={(el) => {
+                      if (el) {
+                        textareaRefs.current[section.id] = el;
+                      }
+                    }}
+                    value={section.content}
+                    onChange={(e) => updateChatSection(section.id, e.target.value)}
+                    placeholder="본문 내용을 입력하세요..."
+                    rows={15}
+                    className="form-input form-textarea"
+                    style={{ width: '100%', minHeight: '200px' }}
+                  />
+                </div>
+              ))}
+
+              {/* 본문 섹션 추가 버튼 */}
+              <ModernFormGroup>
+                <ModernButton onClick={addChatSection}>
+                  본문 섹션 추가
+                </ModernButton>
               </ModernFormGroup>
               
               <ModernFormRow>
@@ -785,6 +958,54 @@ const BannerFormLayout = ({
                           <p>• 아카라이브 등에서 복사한 HTML 코드를 붙여넣으면 자동으로 URL이 추출됩니다</p>
                         </ModernHint>
                       </ModernFormGroup>
+
+                      {/* 현재 이미지 표시 및 삭제 기능 */}
+                      {config.imageUrl && (
+                        <ModernFormGroup label="🖼️ 현재 프로필 이미지">
+                          <div style={{
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            padding: '10px',
+                            backgroundColor: isDarkMode ? '#2d3748' : '#f7fafc'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                              <img 
+                                src={config.imageUrl} 
+                                alt="프로필 이미지 미리보기"
+                                style={{
+                                  width: '40px',
+                                  height: '40px',
+                                  objectFit: 'cover',
+                                  borderRadius: '50%',
+                                  border: '1px solid #cbd5e0'
+                                }}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                              <span style={{
+                                flex: 1,
+                                fontSize: '14px',
+                                color: isDarkMode ? '#a0aec0' : '#718096',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {config.imageUrl.length > 50 
+                                  ? config.imageUrl.substring(0, 50) + '...' 
+                                  : config.imageUrl}
+                              </span>
+                            </div>
+                            <ModernButton 
+                              danger 
+                              onClick={handleImageDelete}
+                              style={{ fontSize: '12px', padding: '4px 8px' }}
+                            >
+                              🗑️ 삭제
+                            </ModernButton>
+                          </div>
+                        </ModernFormGroup>
+                      )}
 
                       <ModernFormGroup>
                         <ModernCheckbox
