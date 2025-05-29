@@ -12,6 +12,11 @@ interface WordReplacement {
   to: string;
 }
 
+interface ChatSection {
+  id: string;
+  content: string;
+}
+
 // 제리형 기본 설정
 const defaultJellyConfig = {
   backgroundImage: '//ac-p1.namu.la/20250523sac/4d095bebd72fd7bdc1d6a25b00a235aff5b90b2ddec6fd1b0fcf16ea0cdd3535.png?expires=1748038585&key=347AY1ahV3ud6g0abXibsg',
@@ -37,6 +42,9 @@ const defaultJellyConfig = {
     { from: '', to: '' },
     { from: '', to: '' }
   ] as WordReplacement[],
+  chatSections: [
+    { id: 'default', content: '' }
+  ],
   content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다. 제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
 
 당신은 등록 및 초기 측정라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다. 블레이저에 달린 코팅된 ID 배지는 그녀의 이름과 직책(등록 및 평가 팀장)을 확인시켜 주었다.
