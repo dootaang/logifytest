@@ -280,7 +280,7 @@ export default function ViewextPage() {
             뷰익형 로그 제조기
           </h1>
           <p className="page-description">
-            뷰어 익스텐션 디자인을 긴빠이 해버렸지 모야?
+            뷰어 익스텐션 디자인 기반
           </p>
         </div>
 

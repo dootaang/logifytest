@@ -669,12 +669,6 @@ const BookmarkletFormLayout: React.FC<BookmarkletFormLayoutProps> = ({
     <div className="container">
       <div className="main-layout">
         <div className="settings-panel">
-          {/* 헤더 */}
-          <div className="header">
-            <h1>📚 북마클릿형 생성기</h1>
-            <p>심플하고 깔끔한 북마클릿 스타일 로그를 생성합니다</p>
-          </div>
-
           {/* 기본 설정 */}
           <ModernSection title="⚙️ 기본 설정">
             <ModernFormRow>

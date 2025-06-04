@@ -5,16 +5,10 @@ import Navigation from '@/components/Navigation'
 import JellyFormLayout from '@/components/JellyFormLayout'
 import JellyGenerator from '@/generators/JellyGenerator'
 import { DarkModeUtils } from '@/utils/styles'
-import { copyToAdvancedClipboard, copyToSimpleClipboard } from '@/utils/advancedClipboard'
 
 interface WordReplacement {
   from: string;
   to: string;
-}
-
-interface ChatSection {
-  id: string;
-  content: string;
 }
 
 // 제리형 기본 설정
@@ -42,9 +36,6 @@ const defaultJellyConfig = {
     { from: '', to: '' },
     { from: '', to: '' }
   ] as WordReplacement[],
-  chatSections: [
-    { id: 'default', content: '' }
-  ],
   content: `서울 헌터 협회 중앙 로비는 낮고 끊임없는 활동 소음으로 웅성거렸다. 한쪽 벽에는 세련된 단말기들이 줄지어 있었고, 대부분의 행인들은 다른 곳에 집중하느라 무시하는, 변동하는 게이트 정보를 표시하고 있었다. 긴장과 기대가 뒤섞인 표정으로 알아볼 수 있는 신규 각성자들은 간단한 서류 양식을 꽉 쥐고, 때때로 보안 복도 아래로 보이는 위압적인 등급 평가실 쪽을 힐끗거렸다. 제복을 입은 협회 직원들은 숙련된 효율성으로 움직였고, 그들의 발걸음은 광택 나는 바닥에 부드럽게 울려 퍼졌다. 에어컨은 넓은 공간을 시원하게 유지했고, 이는 바깥의 습한 여름 공기와 대조를 이루었다.
 
 당신은 등록 및 초기 측정라고 표시된 접수처 앞에 섰다. 그 뒤에는 최유진이 단정한 협회 유니폼을 입고 흠잡을 데 없는 자세로 앉아 있었다. 그녀의 검은 단발머리는 그녀가 지닌 권위에 비해 놀라울 정도로 젊으면서도 전문가적인 얼굴을 감싸고 있었다. 블레이저에 달린 코팅된 ID 배지는 그녀의 이름과 직책(등록 및 평가 팀장)을 확인시켜 주었다.
@@ -83,75 +74,14 @@ export default function JellyPage() {
     }
   }
 
-  // localStorage에 설정 저장하기 (용량 제한 및 이미지 데이터 제외)
+  // localStorage에 설정 저장하기
   const saveConfig = (newConfig: any) => {
     try {
       if (typeof window !== 'undefined') {
-        // 저장할 설정에서 이미지 데이터 제외 (base64 이미지는 용량이 매우 큼)
-        const configToSave = { ...newConfig };
-        
-        // 이미지 URL이 base64 데이터인 경우 저장에서 제외
-        if (configToSave.backgroundImage && configToSave.backgroundImage.startsWith('data:')) {
-          delete configToSave.backgroundImage;
-          console.log('💾 base64 이미지는 용량 절약을 위해 설정 저장에서 제외됩니다.');
-        }
-        
-        // 저장할 데이터를 JSON으로 변환
-        const dataToSave = JSON.stringify(configToSave);
-        
-        // 데이터 크기 체크 (2MB 제한)
-        const dataSizeKB = new Blob([dataToSave]).size / 1024;
-        const maxSizeKB = 2048; // 2MB
-        
-        if (dataSizeKB > maxSizeKB) {
-          console.warn(`⚠️ 설정 데이터가 너무 큽니다: ${dataSizeKB.toFixed(1)}KB > ${maxSizeKB}KB`);
-          return; // 저장하지 않음
-        }
-        
-        // localStorage에 저장 시도
-        localStorage.setItem('jellyConfig', dataToSave);
-        console.log(`💾 제리 설정 저장 완료 (${dataSizeKB.toFixed(1)}KB)`);
+        localStorage.setItem('jellyConfig', JSON.stringify(newConfig))
       }
     } catch (error) {
-      console.error('제리형 설정을 저장하는 중 오류 발생:', error);
-      
-      // QuotaExceededError 처리
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('📦 localStorage 용량이 부족합니다.');
-        
-        // 기존 저장된 설정들을 정리하여 공간 확보 시도
-        try {
-          const keysToClean = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.includes('auto') || key.includes('History') || key.includes('Temp'))) {
-              keysToClean.push(key);
-            }
-          }
-          
-          // 임시 데이터들 삭제
-          keysToClean.forEach(key => {
-            try {
-              localStorage.removeItem(key);
-              console.log(`🧹 임시 데이터 정리: ${key}`);
-            } catch (cleanError) {
-              console.warn(`정리 실패: ${key}`, cleanError);
-            }
-          });
-          
-          // 다시 저장 시도 (이미지 데이터 완전 제외)
-          const cleanConfig = { ...newConfig };
-          delete cleanConfig.backgroundImage; // 이미지 URL 완전 제외
-          
-          const cleanData = JSON.stringify(cleanConfig);
-          localStorage.setItem('jellyConfig', cleanData);
-          console.log('✅ 정리 후 저장 성공');
-          
-        } catch (retryError) {
-          console.error('정리 후에도 저장 실패:', retryError);
-          alert('💾 설정 저장에 실패했습니다.\n\n브라우저 저장 공간이 부족할 수 있습니다.\n(이미지는 임시로만 사용되며 자동 저장되지 않습니다)');
-        }
-      }
+      console.error('제리형 설정을 저장하는 중 오류 발생:', error)
     }
   }
 
@@ -211,24 +141,11 @@ export default function JellyPage() {
     setGeneratedHTML(html)
   }
 
-  const handleCopyHTML = async () => {
-    try {
-      // 고급 클립보드 복사 시도 (HTML + 이미지)
-      const success = await copyToAdvancedClipboard({
-        htmlContent: generatedHTML,
-        plainTextContent: generatedHTML,
-        title: '제리형 로그',
-        author: '제리형 생성기'
-      });
-
-      if (success) {
-        alert('🎉 제리형 로그가 스타일과 이미지와 함께 클립보드에 복사되었습니다!\n\n이제 글쓰기 에디터에 붙여넣기하면 디자인이 그대로 적용됩니다.');
-      } else {
-        alert('📋 제리형 HTML 코드가 클립보드에 복사되었습니다!\n\n(고급 복사 기능을 지원하지 않는 브라우저입니다)');
-      }
-    } catch (error) {
-      console.error('클립보드 복사 실패:', error);
-      alert('❌ 클립보드 복사에 실패했습니다. 다시 시도해주세요.');
+  const handleCopyHTML = () => {
+    if (typeof navigator !== 'undefined') {
+      navigator.clipboard.writeText(generatedHTML).then(() => {
+        alert('제리형 HTML 코드가 클립보드에 복사되었습니다!')
+      })
     }
   }
 

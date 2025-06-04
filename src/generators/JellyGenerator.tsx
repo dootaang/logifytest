@@ -20,12 +20,6 @@ interface Config {
   paragraphIndent: boolean
   content: string
   wordReplacements: Array<{ from: string; to: string }>
-  chatSections?: ChatSection[]
-}
-
-interface ChatSection {
-  id: string
-  content: string
 }
 
 interface JellyGeneratorProps {
@@ -40,36 +34,36 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
       : '0, 0, 0, 1'
   }
 
-  const normalizeImageUrl = (url: string): string => {
-    if (!url) return '';
+  const normalizeImageUrl = (url: string) => {
+    if (!url) return ''
     // 데이터 URL (base64)은 그대로 사용
     if (url.startsWith('data:')) {
-      return url;
+      return url
     }
     // 아카라이브 이미지 URL (//ac-p1.namu.la 또는 //ac.namu.la)은 원본 형태 유지
     if (url.startsWith('//') && (url.includes('ac-p1.namu.la') || url.includes('ac.namu.la'))) {
-      return url;  // 아카라이브 URL은 원본 형태 그대로 사용
+      return url  // 아카라이브 URL은 원본 형태 그대로 사용
     }
     // 기타 절대 URL (//로 시작)은 https 프로토콜 추가
     if (url.startsWith('//')) {
-      return 'https:' + url;
+      return 'https:' + url
     }
-    // 레거시 로컬 업로드 경로는 현재 호스트 기준으로 변환 (Vercel 환경에서는 사용되지 않음)
+    // 상대 경로 (/uploads/...)는 현재 호스트 기준으로 변환
     if (url.startsWith('/uploads/')) {
+      // 개발환경에서는 localhost 사용
       if (typeof window !== 'undefined') {
-        return window.location.protocol + '//' + window.location.host + url;
+        return window.location.protocol + '//' + window.location.host + url
       }
-      // Vercel 환경에서는 이 경로가 사용되지 않지만 폴백 제공
-      return url;
+      return 'http://localhost:3000' + url
     }
     // http/https가 없으면 https 추가
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return 'https://' + url;
+      return 'https://' + url
     }
-    return url;
-  };
+    return url
+  }
 
-  // 미리보기용 이미지 URL 생성 (CORS 우회)
+  // 미리보기용 이미지 URL 생성 (프록시를 통해 CORS 우회)
   const getPreviewImageUrl = (url: string): string => {
     const normalizedUrl = normalizeImageUrl(url);
     
@@ -78,14 +72,20 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
       return normalizedUrl;
     }
     
-    // 레거시 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
+    // 로컬 업로드 이미지는 직접 사용 (CORS 문제 없음)
     if (normalizedUrl.includes('/uploads/')) {
       return normalizedUrl;
     }
     
-    // 미리보기에서는 원본 URL 사용 (CORS 오류 무시)
-    // img 태그에서 crossorigin 없이 로드하면 CORS 오류가 콘솔에만 표시되고 이미지는 정상 표시됨
-    return normalizedUrl;
+    // 아카라이브 이미지인 경우 프록시를 통해 로드
+    if (normalizedUrl.includes('ac-p1.namu.la') || normalizedUrl.includes('ac.namu.la')) {
+      // //로 시작하는 아카라이브 URL은 https: 프로토콜을 추가해서 프록시에 전달
+      const fullUrl = normalizedUrl.startsWith('//') ? 'https:' + normalizedUrl : normalizedUrl;
+      return `https://images.weserv.nl/?url=${encodeURIComponent(fullUrl)}`;
+    }
+    
+    // 기타 외부 이미지도 프록시를 통해 로드 (CORS 우회)
+    return `https://images.weserv.nl/?url=${encodeURIComponent(normalizedUrl)}`;
   };
 
   const applyWordReplacements = (text: string) => {
@@ -169,29 +169,20 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
   }
 
   const generateHTML = () => {
-    // chatSections이 있으면 사용, 없으면 기존 content 사용
-    const sections = config.chatSections && config.chatSections.length > 0 
-      ? config.chatSections 
-      : [{ id: 'default', content: config.content }];
-
+    const contentHTML = processContent(config.content)
+    
     // 실제 HTML 생성용 - 원본 URL 직접 사용 (게시판 호환성)
-    const finalImageUrl = normalizeImageUrl(config.backgroundImage);
+    const finalImageUrl = normalizeImageUrl(config.backgroundImage)
 
-    let allHTML = '<p><br></p>';
-
-    sections.forEach((section, index) => {
-      if (!section.content.trim()) return;
-
-      const contentHTML = processContent(section.content);
-
-      if (index === 0) {
-        // 첫 번째 박스: 모든 요소 포함
-        allHTML += `<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
+    return `<p>
+	<br>
+</p>
+<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;position:relative;width:100%;max-width:700px;margin:0px auto;">
 	<div style="height: 85px;margin:-1px -1px 0px -1px;">
-		<img src="${finalImageUrl}" alt="배경 이미지" style="width:100%;height:170px;object-fit:cover;object-position:50% 40%;border-radius:19px 19px 0px 0px;display:block;" />
-		<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;margin-top:-170px;">
-			<br>
-		</div></div>
+		<div style="background-image:url('${finalImageUrl}');background-size:cover;height:170px;background-position:50% 40%;border-radius:19px 19px 0px 0px;background-color:#f0f0f0;">
+			<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;">
+				<br>
+			</div></div></div>
 	<div style="background:linear-gradient(135deg,rgba(${hexToRgb(config.leftTextColor1)}),rgba(${hexToRgb(config.leftTextColor2)}));background-size:110%;background-position:center;border-radius:10px;padding:10px;line-height:10px;text-transform:uppercase;letter-spacing:0.1em;box-shadow: 0px 0px 0px 3px rgba(233,233,233,0.9), inset 0px 40px 0px rgba(30,30,30,.1);display:flex;width:fit-content;max-width:300px;float:left;margin-left:6.5%;margin-top:70px;"><span style="text-decoration:none;color:#ededed;font-weight:600;text-shadow:0px 0px 5px rgba(30,30,30,.1);">${config.leftText}</span></div>
 	<div style="margin-top: 70px;float: right;width: fit-content; max-width: 100%; background-color:#494949;border-radius:5px 0px 0px 5px;padding:10px;line-height:10px;letter-spacing:0.25em;text-transform:uppercase;color:#d5d5d5;font-size:0.7em;">${config.rightText}</div>
 	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;margin-top: 90px;">
@@ -200,50 +191,29 @@ const JellyGenerator = ({ config }: JellyGeneratorProps) => {
 			<br>
 		</p>
 ${contentHTML}
-	</div></div>`;
-      } else {
-        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
-        allHTML += `<p><br></p><div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:20px auto;">
-	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;">
+	</div></div>
 
-		<p style="line-height:2;margin:2rem 0;font-size:13.8px;letter-spacing:-0.8px;">
-			<br>
-		</p>
-${contentHTML}
-	</div></div>`;
-      }
-    });
-
-    allHTML += '<p><br></p>';
-
-    return allHTML;
+<p>
+	<br>
+</p>`
   }
 
   // 미리보기 전용 HTML 생성 (프록시 사용)
   const generatePreviewHTML = () => {
-    // chatSections이 있으면 사용, 없으면 기존 content 사용
-    const sections = config.chatSections && config.chatSections.length > 0 
-      ? config.chatSections 
-      : [{ id: 'default', content: config.content }];
+    const contentHTML = processContent(config.content)
     
     // 미리보기용 - 프록시 사용 (CORS 우회)
-    const finalImageUrl = getPreviewImageUrl(config.backgroundImage);
+    const finalImageUrl = getPreviewImageUrl(config.backgroundImage)
 
-    let allHTML = '<p><br></p>';
-
-    sections.forEach((section, index) => {
-      if (!section.content.trim()) return;
-
-      const contentHTML = processContent(section.content);
-
-      if (index === 0) {
-        // 첫 번째 박스: 모든 요소 포함
-        allHTML += `<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:0px auto;">
+    return `<p>
+	<br>
+</p>
+<div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;position:relative;width:100%;max-width:700px;margin:0px auto;">
 	<div style="height: 85px;margin:-1px -1px 0px -1px;">
-		<img src="${finalImageUrl}" alt="배경 이미지" style="width:100%;height:170px;object-fit:cover;object-position:50% 40%;border-radius:19px 19px 0px 0px;display:block;" />
-		<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;margin-top:-170px;">
-			<br>
-		</div></div>
+		<div style="background-image:url('${finalImageUrl}');background-size:cover;height:170px;background-position:50% 40%;border-radius:19px 19px 0px 0px;background-color:#f0f0f0;">
+			<div style="height:130px;width:100%;border-radius:19px 19px 0px 0px;">
+				<br>
+			</div></div></div>
 	<div style="background:linear-gradient(135deg,rgba(${hexToRgb(config.leftTextColor1)}),rgba(${hexToRgb(config.leftTextColor2)}));background-size:110%;background-position:center;border-radius:10px;padding:10px;line-height:10px;text-transform:uppercase;letter-spacing:0.1em;box-shadow: 0px 0px 0px 3px rgba(233,233,233,0.9), inset 0px 40px 0px rgba(30,30,30,.1);display:flex;width:fit-content;max-width:300px;float:left;margin-left:6.5%;margin-top:70px;"><span style="text-decoration:none;color:#ededed;font-weight:600;text-shadow:0px 0px 5px rgba(30,30,30,.1);">${config.leftText}</span></div>
 	<div style="margin-top: 70px;float: right;width: fit-content; max-width: 100%; background-color:#494949;border-radius:5px 0px 0px 5px;padding:10px;line-height:10px;letter-spacing:0.25em;text-transform:uppercase;color:#d5d5d5;font-size:0.7em;">${config.rightText}</div>
 	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;margin-top: 90px;">
@@ -252,23 +222,11 @@ ${contentHTML}
 			<br>
 		</p>
 ${contentHTML}
-	</div></div>`;
-      } else {
-        // 두 번째 박스부터: 텍스트만 포함 (박스 사이에 <p><br></p> 추가)
-        allHTML += `<p><br></p><div style="border:solid 0px #e3e3e3;background-color:${config.contentBackgroundColor};border-radius:20px;width:100%;max-width:700px;margin:20px auto;">
-	<div style="padding:20px 7%;line-height:${config.lineHeight};letter-spacing:.35px;">
+	</div></div>
 
-		<p style="line-height:2;margin:2rem 0;font-size:13.8px;letter-spacing:-0.8px;">
-			<br>
-		</p>
-${contentHTML}
-	</div></div>`;
-      }
-    });
-
-    allHTML += '<p><br></p>';
-
-    return allHTML;
+<p>
+	<br>
+</p>`
   }
 
   return {

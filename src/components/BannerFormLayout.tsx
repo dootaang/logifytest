@@ -534,11 +534,6 @@ const BannerFormLayout = ({
     <div className="container">
       <div className="main-layout">
         <div className="settings-panel">
-          {/* 헤더 */}
-          <div className="header">
-            <h1>배너 생성기 (V2)</h1>
-            <p>모던한 배너 스타일 생성기</p>
-          </div>
 
           {/* 탭 네비게이션 */}
           <ModernSection title="📋 메뉴">

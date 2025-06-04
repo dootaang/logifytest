@@ -589,12 +589,6 @@ const ChatchanFormLayout: React.FC<ChatchanFormLayoutProps> = ({
     <div className="container">
       <div className="main-layout">
         <div className="settings-panel">
-          {/* 헤더 */}
-          <div className="header">
-            <h1>챗챈 로그 제조기 (V1.3)</h1>
-            <p>모던한 챗챈 스타일 로그 생성기</p>
-          </div>
-
           {/* 테마 토글 섹션 */}
           <ModernSection title="🎨 테마 설정">
             <ModernFormRow>
