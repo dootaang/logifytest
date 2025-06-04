@@ -252,7 +252,7 @@ export default function ChatchanPage() {
         <div className="page-header">
           <h1 className="page-title">
             <span className="page-icon">💬</span>
-            챗챈형 로그 생성기
+            챗챈 로그 제조기 1.3
           </h1>
           <p className="page-description">
             채팅 형태의 대화형 로그를 생성합니다.

@@ -236,7 +236,7 @@ export default function CardPage() {
         <div className="page-header">
           <h1 className="page-title">
             <span className="page-icon">🃊</span>
-            카드형 로그 생성기
+            카드형 로그 제조기
           </h1>
           <p className="page-description">
             Design by chanrum

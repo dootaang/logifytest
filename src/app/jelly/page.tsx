@@ -168,10 +168,10 @@ export default function JellyPage() {
         <div className="page-header">
           <h1 className="page-title">
             <span className="page-icon">🐭</span>
-            제리형 로그 생성기
+            제리형 로그 제조기
           </h1>
           <p className="page-description">
-            세련되고 감각적인 디자인의 로그를 생성합니다.
+            이미지 업로드 기능 불가. url 업로드 설명 참고.
           </p>
         </div>
 

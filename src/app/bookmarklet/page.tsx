@@ -191,7 +191,7 @@ export default function BookmarkletPage() {
         <div className="page-header">
           <h1 className="page-title">
             <span className="page-icon">📚</span>
-            북마클릿형 로그 생성기
+            북마클릿형 로그 제조기
           </h1>
           <p className="page-description">
             전통적이고 안정적인 북마클릿 스타일의 로그를 생성합니다.

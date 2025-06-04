@@ -12,8 +12,7 @@ const generators = [
     name: '북마클릿형',
     icon: '📚',
     path: '/bookmarklet',
-    description: '근-본 북마클릿',
-    longDescription: '모든 것의 시작',
+    description: '근-본',
     color: STYLES.primary
   },
   {
@@ -22,7 +21,6 @@ const generators = [
     icon: '🏞️',
     path: '/banner',
     description: '크고 아름다워',
-    longDescription: '프로필 이미지 대빵 큼',
     color: STYLES.secondary
   },
   {
@@ -31,7 +29,6 @@ const generators = [
     icon: '🐭',
     path: '/jelly',
     description: '센스있는 이쁜 것',
-    longDescription: '어떤 챈럼의 유산',
     color: STYLES.success
   },
   {
@@ -39,8 +36,7 @@ const generators = [
     name: '챗챈형',
     icon: '💬',
     path: '/chatchan',
-    description: '챗챈1.3 긴-빠이',
-    longDescription: '챗챈 로그제조기 1.3 이식버전, 아직 불안정함.',
+    description: '챗챈1.3 스타일',
     color: STYLES.primary
   },
   {
@@ -49,7 +45,6 @@ const generators = [
     icon: '🃊',
     path: '/card',
     description: '배경과 프사',
-    longDescription: '새로 제공받은 디자인. 누구나 디자인 제공 환영.',
     color: STYLES.secondary
   },
   {
@@ -57,8 +52,7 @@ const generators = [
     name: '뷰익형',
     icon: '🔖',
     path: '/viewext',
-    description: '뷰어 익스텐션 스타일 긴빠이!',
-    longDescription: '작업 시작도 안함.',
+    description: '뷰어 익스텐션 스타일',
     color: STYLES.success
   }
 ]
@@ -111,10 +105,10 @@ export default function HomePage() {
             <div className="header-text">
               <h1 className="header-title">
                 <span className="header-icon">🛠️</span>
-                로그제조기 올인원 체험판
+                로그제조기 올인원 beta 1.0
               </h1>
               <p className="header-subtitle">
-                마참내! 창고마냥 전부 다 모아버렸다!
+                정식 버전 출시는 기말 끝나고 오랜 기간 뒤...
               </p>
             </div>
             <div className="header-actions">
@@ -128,9 +122,9 @@ export default function HomePage() {
       <main className="homepage-main">
         <div className="main-container">
           <div className="intro-section">
-            <h2 className="intro-title">원하는 스타일을 골라라 챗붕!</h2>
+            <h2 className="intro-title">로그를 마음껏 꾸며라 챗붕!</h2>
             <p className="intro-description">
-              여기저기서 긴빠이한 것이 한가득이다!
+              주의. 이미지 들어가는 경우 모바일 환경에서 복붙 안됨.
             </p>
           </div>
 

@@ -1,9 +1,7 @@
 {
-  "/page": "app/page.js",
-  "/viewext/page": "app/viewext/page.js",
-  "/bookmarklet/page": "app/bookmarklet/page.js",
-  "/banner/page": "app/banner/page.js",
   "/chatchan/page": "app/chatchan/page.js",
-  "/jelly/page": "app/jelly/page.js",
-  "/card/page": "app/card/page.js"
+  "/banner/page": "app/banner/page.js",
+  "/page": "app/page.js",
+  "/bookmarklet/page": "app/bookmarklet/page.js",
+  "/jelly/page": "app/jelly/page.js"
 }

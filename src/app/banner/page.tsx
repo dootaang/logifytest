@@ -320,7 +320,7 @@ export default function BannerPage() {
         <div className="page-header">
           <h1 className="page-title">
             <span className="page-icon">🏞️</span>
-            배너형 로그 생성기
+            배너형 로그 제조기
           </h1>
           <p className="page-description">
             시각적으로 임팩트 있는 배너 스타일의 로그를 생성합니다.
